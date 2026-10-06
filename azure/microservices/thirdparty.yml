@@ -1,0 +1,404 @@
+#
+# Copyright © 2016-2020 The Thingsboard Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tb-zookeeper
+  namespace: thingsboard
+data:
+  start-node.sh: |
+    #!/bin/sh
+    set -ex;
+    mkdir -p "$ZOO_DATA_LOG_DIR" "$ZOO_DATA_DIR" "$ZOO_CONF_DIR";
+    echo $HOSTNAME| rev | cut -d "-" -f1 | rev > "$ZOO_DATA_DIR/myid"
+    zkServer.sh start-foreground /conf/zoo.cfg
+  zoo.cfg: |+
+    dataDir=/data
+    dataLogDir=/datalog
+    tickTime=2000
+    initLimit=5
+    syncLimit=2
+    maxClientCnxns=200
+    standaloneEnabled=true
+    server.0=zookeeper-0.zookeeper-headless.thingsboard.svc.cluster.local:2888:3888;2181
+    server.1=zookeeper-1.zookeeper-headless.thingsboard.svc.cluster.local:2888:3888;2181
+    server.2=zookeeper-2.zookeeper-headless.thingsboard.svc.cluster.local:2888:3888;2181
+  log4j.properties: |+
+    zookeeper.root.logger=INFO, CONSOLE
+    zookeeper.console.threshold=INFO
+    log4j.rootLogger=${zookeeper.root.logger}
+    log4j.appender.CONSOLE=org.apache.log4j.ConsoleAppender
+    log4j.appender.CONSOLE.Threshold=${zookeeper.console.threshold}
+    log4j.appender.CONSOLE.layout=org.apache.log4j.PatternLayout
+    log4j.appender.CONSOLE.layout.ConversionPattern=%d{ISO8601} [myid:%X{myid}] - %-5p [%t:%C{1}@%L] - %m%n
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: thingsboard
+spec:
+  serviceName: "zookeeper-headless"
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+        - name: zookeeper
+          imagePullPolicy: Always
+          image: zookeeper:3.8.1
+          ports:
+            - containerPort: 2181
+              name: client
+            - containerPort: 2888
+              name: server
+            - containerPort: 3888
+              name: election
+          resources:
+            limits:
+              cpu: "200m"
+              memory: 500Mi
+            requests:
+              cpu: "100m"
+              memory: 500Mi
+          command: ["/conf/start-node.sh"]
+          readinessProbe:
+            periodSeconds: 60
+            tcpSocket:
+              port: 2181
+          livenessProbe:
+            periodSeconds: 60
+            tcpSocket:
+              port: 2181
+          env:
+            - name: JVMFLAGS
+              value: "-Dzookeeper.electionPortBindRetry=0"
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: conf
+              mountPath: /conf
+              readOnly: false
+            - name: data
+              mountPath: /data
+              readOnly: false
+            - name: datalog
+              mountPath: /datalog
+              readOnly: false
+      volumes:
+        - name: conf
+          configMap:
+            name: tb-zookeeper
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 100Mi
+    - metadata:
+        name: datalog
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: thingsboard
+spec:
+  type: ClusterIP
+  ports:
+    - port: 2181
+      targetPort: 2181
+      name: client
+    - port: 2888
+      targetPort: 2888
+      name: server
+    - port: 3888
+      targetPort: 3888
+      name: election
+  selector:
+    app: zookeeper
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-headless
+  namespace: thingsboard
+  labels:
+    app: zookeeper
+spec:
+  ports:
+    - port: 2181
+      targetPort: 2181
+      name: client
+    - port: 2888
+      targetPort: 2888
+      name: server
+    - port: 3888
+      targetPort: 3888
+      name: election
+  clusterIP: None
+  selector:
+    app: zookeeper
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tb-kafka
+  namespace: thingsboard
+spec:
+  serviceName: "tb-kafka"
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: tb-kafka
+  template:
+    metadata:
+      labels:
+        app: tb-kafka
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values:
+                      - tb-kafka
+              topologyKey: "kubernetes.io/hostname"
+      securityContext:
+        runAsUser: 799
+        runAsNonRoot: true
+        fsGroup: 799
+      containers:
+        - name: server
+          imagePullPolicy: Always
+          image: bitnamilegacy/kafka:4.0.0
+          ports:
+            - containerPort: 9092
+              name: client
+            - containerPort: 9093
+              name: controller
+          startupProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 15
+            successThreshold: 1
+            tcpSocket:
+              port: "controller"
+          livenessProbe:
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+            periodSeconds: 10
+            successThreshold: 1
+            exec:
+              command:
+                - pgrep
+                - -f
+                - kafka
+          readinessProbe:
+            initialDelaySeconds: 15
+            failureThreshold: 10
+            timeoutSeconds: 5
+            periodSeconds: 15
+            successThreshold: 1
+            tcpSocket:
+              port: "controller"
+          env:
+            - name: KAFKA_CLUSTER_ID
+              value: "A0SZ6TGET1mhlQYl49uBSQ"
+            - name: ALLOW_PLAINTEXT_LISTENER
+              value: "yes"
+            - name: KAFKA_CFG_LISTENERS
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
+            - name: KAFKA_CFG_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://:9092"
+            - name: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+            - name: KAFKA_CFG_INTER_BROKER_LISTENER_NAME
+              value: "PLAINTEXT"
+            - name: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
+              value: "0@tb-kafka-0.tb-kafka.thingsboard.svc.cluster.local:9093,1@tb-kafka-1.tb-kafka.thingsboard.svc.cluster.local:9093,2@tb-kafka-2.tb-kafka.thingsboard.svc.cluster.local:9093"
+            - name: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
+              value: "CONTROLLER"
+            - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
+              value: "false"
+            - name: KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "3"
+            - name: KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "3"
+            - name: KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "2"
+            - name: KAFKA_CFG_LOG_RETENTION_BYTES
+              value: "1073741824"
+            - name: KAFKA_CFG_SEGMENT_BYTES
+              value: "26214400"
+            - name: KAFKA_CFG_LOG_RETENTION_MS
+              value: "300000"
+            - name: KAFKA_CFG_LOG_CLEANUP_POLICY
+              value: "delete"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: "1"
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: "1"
+            - name: KAFKA_PORT
+              value: "9092"
+            - name: KAFKA_OPTS
+              value: "-Xms1G -Xmx1G -XX:+AlwaysPreTouch"
+            - name: KAFKA_LOG_DIRS
+              value: "/kafka-data/logs"
+            - name: KAFKA_CFG_PROCESS_ROLES
+              value: "controller,broker"
+            - name: KAFKA_NODE_ID_COMMAND
+              value: "hostname | cut -d'-' -f3"
+          resources:
+            requests:
+              cpu: "300m"
+              memory: 1500Mi
+            limits:
+              cpu: "2000m"
+              memory: 1500Mi
+          volumeMounts:
+            - name: data-logs
+              mountPath: /kafka-data
+              readOnly: false
+            - name: app-logs
+              mountPath: /opt/bitnami/kafka/logs
+              readOnly: false
+  volumeClaimTemplates:
+    - metadata:
+        name: data-logs
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 25Gi
+    - metadata:
+        name: app-logs
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1000Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tb-kafka
+  namespace: thingsboard
+spec:
+  type: ClusterIP
+  selector:
+    app: tb-kafka
+  ports:
+    - port: 9092
+      name: client
+    - port: 9093
+      name: controller
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tb-valkey
+  namespace: thingsboard
+spec:
+  serviceName: "tb-valkey"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tb-valkey
+  template:
+    metadata:
+      labels:
+        app: tb-valkey
+    spec:
+      containers:
+        - name: server
+          imagePullPolicy: Always
+          image: bitnamilegacy/valkey:8.0
+          ports:
+            - containerPort: 6379
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 400Mi
+            requests:
+              cpu: "100m"
+              memory: 400Mi
+          readinessProbe:
+            periodSeconds: 5
+            tcpSocket:
+              port: 6379
+          livenessProbe:
+            periodSeconds: 5
+            tcpSocket:
+              port: 6379
+          env:
+            - name: ALLOW_EMPTY_PASSWORD
+              value: "yes"
+            - name: VALKEY_EXTRA_FLAGS
+              value: "--maxmemory 500mb --maxmemory-policy allkeys-lru"
+          volumeMounts:
+            - mountPath: /data
+              name: valkey-data
+  volumeClaimTemplates:
+    - metadata:
+        name: valkey-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tb-valkey
+  namespace: thingsboard
+spec:
+  type: ClusterIP
+  selector:
+    app: tb-valkey
+  ports:
+    - name: tb-valkey-port
+      port: 6379
+---
