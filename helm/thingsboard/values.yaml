@@ -72,24 +72,24 @@ node:
   service:
     type: ClusterIP
     port: 8080
-  resources: {}
-    # We usually recommend not to specify default resources and to leave this as a conscious
-    # choice for the user. This also increases chances charts run on environments with little
-    # resources, such as Minikube. If you do want to specify resources, uncomment the following
-    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-    # limits:
-    #   cpu: 100m
-    #   memory: 128Mi
-    # requests:
-    #   cpu: 100m
-    #   memory: 128Mi
+  resources:
+    requests:
+      memory: "2Gi"
+      cpu: "1000m"
+    limits:
+      memory: "4Gi"
+      cpu: "2000m"
+  env:
+    - name: JAVA_OPTS
+      value: "-Xms2G -Xmx2G"
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-  nodeSelector: {}
+  nodeSelector:
+    nodegroup: workload
   tolerations: []
   affinity: {}
 
@@ -106,14 +106,21 @@ jsexecutor:
   podAnnotations: {}
   podSecurityContext: {}
   securityContext: {}
-  resources: {}
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-  nodeSelector: {}
+  nodeSelector:
+    nodegroup: workload
   tolerations: []
   affinity: {}
 
@@ -141,14 +148,24 @@ mqtt:
   service:
     type: ClusterIP
     port: 8883
-  resources: {}
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  env:
+    - name: JAVA_OPTS
+      value: "-Xms1G -Xmx1G"
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-  nodeSelector: {}
+  nodeSelector:
+    nodegroup: workload
   tolerations: []
   affinity: {}
 
@@ -180,7 +197,8 @@ http:
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-  nodeSelector: {}
+  nodeSelector:
+    nodegroup: workload
   tolerations: []
   affinity: {}
 
@@ -212,7 +230,8 @@ coap:
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-  nodeSelector: {}
+  nodeSelector:
+    nodegroup: workload
   tolerations: []
   affinity: {}
 
@@ -243,7 +262,8 @@ webui:
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
     # targetMemoryUtilizationPercentage: 80
-  nodeSelector: {}
+  nodeSelector:
+    nodegroup: workload
   tolerations: []
   affinity: {}
 
@@ -263,20 +283,16 @@ cassandra:
     password: setplease
 
 postgresql-ha:
+  enabled: false
   nameOverride: pg
   postgresql:
-    database: thingsboard
-    replicaCount: 1
-    password: setplease
-    repmgrPassword: setplease
-  postgresqlImage:
-    tag: 12
+    database: iot_thingsboard
+    username: iot-thingsboard
+    password: "<REPLACE_IN_DEVTRON_UI>"
   pgpool:
-    adminPassword: setplease
-    replicaCount: 1
-    useLoadBalancing: false
-  pgpoolImage:
-    tag: 4
+    fullnameOverride: "<REPLACE_IP_IN_DEVTRON_UI>"
+    containerPort: 5432
+
 
 redis:
   # Set architecture to either standalone or replication
@@ -286,17 +302,47 @@ redis:
   master:
     kind: Deployment
     persistence:
-      enabled: false
+      enabled: true
+      storageClass: "highio-az1"
     disableCommands:
       - FLUSHALL
+    nodeSelector:
+      nodegroup: workload
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
   replica:
     replicaCount: 0
     persistence:
       enabled: false
 
 kafka:
+  nodeSelector:
+    nodegroup: workload
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
   persistence:
-    enabled: false
+    enabled: true
+    storageClass: "highio-az1"
   zookeeper:
+    nodeSelector:
+      nodegroup: workload
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
     persistence:
-      enabled: false
+      enabled: true
+      storageClass: "highio-az1"
