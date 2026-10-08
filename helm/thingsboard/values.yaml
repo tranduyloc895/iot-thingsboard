@@ -15,10 +15,15 @@
 #
 
 global:
+  imagePullSecrets:
+    - name: dockerhub-secret
+    - dockerhub-secret
   image:
     server: docker.io
     tag: "3.4.0"
-    pullSecrets: []
+    pullSecrets:
+      - name: dockerhub-secret
+      - dockerhub-secret
     pullPolicy: Always
   jsonLogs: false
 
