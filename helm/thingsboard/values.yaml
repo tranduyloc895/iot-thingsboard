@@ -291,10 +291,12 @@ postgresql-ha:
   enabled: false
   nameOverride: pg
   postgresql:
+    replicaCount: 0
     database: iot_thingsboard
     username: iot-thingsboard
     password: "<REPLACE_IN_DEVTRON_UI>"
   pgpool:
+    replicaCount: 0
     fullnameOverride: "<REPLACE_IP_IN_DEVTRON_UI>"
     containerPort: 5432
 
