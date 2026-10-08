@@ -53,6 +53,8 @@ node:
   kind: StatefulSet
   loadDemo: false
   replicaCount: 1
+  imagePullSecrets:
+    - name: dockerhub-secret
   image:
     repository: thingsboard/tb-node
     # Overrides the global image values
@@ -99,6 +101,8 @@ node:
 jsexecutor:
   # kind can be either Deployment or StatefulSet
   kind: Deployment
+  imagePullSecrets:
+    - name: dockerhub-secret
   image:
     repository: thingsboard/tb-js-executor
     # Overrides the global image values
@@ -130,6 +134,8 @@ jsexecutor:
 mqtt:
   # kind can be either Deployment or StatefulSet
   kind: StatefulSet
+  imagePullSecrets:
+    - name: dockerhub-secret
   image:
     repository: thingsboard/tb-mqtt-transport
     # Overrides the global image values
@@ -175,6 +181,8 @@ mqtt:
 http:
   # kind can be either Deployment or StatefulSet
   kind: StatefulSet
+  imagePullSecrets:
+    - name: dockerhub-secret
   image:
     repository: thingsboard/tb-http-transport
     # Overrides the global image values
@@ -208,6 +216,8 @@ http:
 coap:
   # kind can be either Deployment or StatefulSet
   kind: StatefulSet
+  imagePullSecrets:
+    - name: dockerhub-secret
   image:
     repository: thingsboard/tb-coap-transport
     # Overrides the global image values
@@ -241,6 +251,8 @@ coap:
 webui:
   # kind can be either Deployment or StatefulSet
   kind: Deployment
+  imagePullSecrets:
+    - name: dockerhub-secret
   image:
     repository: thingsboard/tb-web-ui
     # Overrides the global image values
