@@ -26,12 +26,7 @@ spec:
     spec:
       imagePullSecrets:
         - name: dockerhub-secret
-      initContainers:
-        - name: check-db-ready
-          image: postgres:11
-          command: ['sh', '-c',
-            'until pg_isready -h {{ include "thingsboard.pgpoolservicename" . }} -p {{ index .Values "postgresql-ha" "pgpool" "containerPort" }};
-            do echo waiting for database; sleep 2; done;']
+
       containers:
       - name: init-db
         envFrom:
