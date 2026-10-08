@@ -21,7 +21,7 @@ global:
     server: docker.io
     tag: "3.4.0"
     pullSecrets:
-      - dockerhub-secret
+      - name: dockerhub-secret
     pullPolicy: Always
   jsonLogs: false
 
@@ -301,8 +301,9 @@ postgresql-ha:
 
 redis:
   image:
-    registry: public.ecr.aws
+    registry: docker.io
     repository: bitnami/redis
+    tag: latest
   # Set architecture to either standalone or replication
   architecture: standalone
   auth:
@@ -330,8 +331,9 @@ redis:
 
 kafka:
   image:
-    registry: public.ecr.aws
+    registry: docker.io
     repository: bitnami/kafka
+    tag: latest
   nodeSelector:
     nodegroup: workload
   resources:
@@ -346,8 +348,9 @@ kafka:
     storageClass: "highio"
   zookeeper:
     image:
-      registry: public.ecr.aws
+      registry: docker.io
       repository: bitnami/zookeeper
+      tag: latest
     nodeSelector:
       nodegroup: workload
     resources:
