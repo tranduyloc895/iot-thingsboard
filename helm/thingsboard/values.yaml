@@ -300,6 +300,9 @@ postgresql-ha:
 
 
 redis:
+  image:
+    registry: public.ecr.aws
+    repository: bitnami/redis
   # Set architecture to either standalone or replication
   architecture: standalone
   auth:
@@ -326,6 +329,9 @@ redis:
       enabled: false
 
 kafka:
+  image:
+    registry: public.ecr.aws
+    repository: bitnami/kafka
   nodeSelector:
     nodegroup: workload
   resources:
@@ -339,6 +345,9 @@ kafka:
     enabled: true
     storageClass: "highio"
   zookeeper:
+    image:
+      registry: public.ecr.aws
+      repository: bitnami/zookeeper
     nodeSelector:
       nodegroup: workload
     resources:
