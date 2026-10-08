@@ -344,8 +344,7 @@ redis:
 kafka:
   image:
     registry: docker.io
-    repository: bitnami/kafka
-    tag: latest
+    repository: bitnamilegacy/kafka
   nodeSelector:
     nodegroup: workload
   resources:
@@ -361,8 +360,7 @@ kafka:
   zookeeper:
     image:
       registry: docker.io
-      repository: bitnami/zookeeper
-      tag: latest
+      repository: bitnamilegacy/zookeeper
     nodeSelector:
       nodegroup: workload
     resources:
