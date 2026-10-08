@@ -22,7 +22,7 @@ global:
     tag: "3.4.0"
     pullSecrets:
       - name: dockerhub-secret
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
   jsonLogs: false
 
 nameOverride: ""
