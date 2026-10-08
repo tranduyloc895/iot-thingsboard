@@ -25,7 +25,7 @@ spec:
   template:
     spec:
       imagePullSecrets:
-        - name: '{{ .Release.Name }}-container-registry'
+        - name: dockerhub-secret
       initContainers:
         - name: check-db-ready
           image: postgres:{{ index .Values "postgresql-ha" "postgresqlImage" "tag" }}
