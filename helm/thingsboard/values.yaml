@@ -342,9 +342,9 @@ redis:
 
 kafka:
   image:
-    registry: public.ecr.aws
-    repository: bitnami/kafka
-    tag: "latest"
+    registry: docker.io
+    repository: bitnamilegacy/kafka
+    tag: "3.3.2"
   nodeSelector:
     nodegroup: workload
   resources:
@@ -358,9 +358,9 @@ kafka:
     enabled: false
   zookeeper:
     image:
-      registry: public.ecr.aws
-      repository: bitnami/zookeeper
-      tag: "latest"
+      registry: docker.io
+      repository: bitnamilegacy/zookeeper
+      tag: "3.9.3-debian-12-r22"
     nodeSelector:
       nodegroup: workload
     resources:
