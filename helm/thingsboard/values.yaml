@@ -342,8 +342,8 @@ redis:
 
 kafka:
   image:
-    registry: docker.io
-    repository: rapidfort/kafka
+    registry: public.ecr.aws
+    repository: bitnami/kafka
     tag: "latest"
   nodeSelector:
     nodegroup: workload
@@ -358,8 +358,8 @@ kafka:
     enabled: false
   zookeeper:
     image:
-      registry: docker.io
-      repository: rapidfort/zookeeper
+      registry: public.ecr.aws
+      repository: bitnami/zookeeper
       tag: "latest"
     nodeSelector:
       nodegroup: workload
