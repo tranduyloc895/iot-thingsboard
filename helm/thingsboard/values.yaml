@@ -303,7 +303,7 @@ postgresql-ha:
   postgresql:
     replicaCount: 0
     database: iot_thingsboard
-    username: iot-thingsboard
+    username: iot_thingsboard
     password: "<REPLACE_IN_DEVTRON_UI>"
   pgpool:
     replicaCount: 0
