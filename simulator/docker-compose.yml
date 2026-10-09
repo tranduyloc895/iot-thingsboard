@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  vehicle-simulator:
+    build: .
+    image: hcm-vehicle-simulator:latest
+    deploy:
+      # SỐ LƯỢNG XE BẠN MUỐN ĐẺ RA (Ví dụ: 20)
+      replicas: 20
+    environment:
+      # KHAI BÁO IP PUBLIC CỦA MQTT LOADBALANCER K8S
+      - THINGSBOARD_HOST=10.0.0.225
+      - PORT=1883
+      # LẤY KEY VÀ SECRET TỪ THINGSBOARD UI DÁN VÀO ĐÂY
+      - PROVISION_KEY=DIEN_KEY_VAO_DAY
+      - PROVISION_SECRET=DIEN_SECRET_VAO_DAY
