@@ -36,3 +36,4 @@ dependencies:
   - name: redis
     version: 16.4.5
     repository: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
+    condition: redis.enabled

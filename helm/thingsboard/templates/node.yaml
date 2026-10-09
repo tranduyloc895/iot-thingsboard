@@ -80,7 +80,7 @@ spec:
           - name: CACHE_TYPE
             value: "redis"
           - name: REDIS_HOST
-            value: "{{ .Release.Name }}-redis-master"
+            value: "{{ .Values.redis.fullnameOverride | default (printf "%s-redis-master" .Release.Name) }}"
           - name: REDIS_PASSWORD
             value: "{{ .Values.redis.auth.password }}"
           envFrom:
