@@ -69,7 +69,7 @@ async def websocket_live_stream(websocket: WebSocket):
         while True:
             data = await build_dashboard_data()
             await websocket.send_text(data.model_dump_json())
-            await asyncio.sleep(2.5)  # Cập nhật mỗi 2.5 giây cho frontend
+            await asyncio.sleep(1.0)  # Cập nhật mỗi 1 giây cho frontend
     except WebSocketDisconnect:
         pass
     except Exception as e:
