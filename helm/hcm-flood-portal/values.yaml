@@ -1,0 +1,65 @@
+# Default values for hcm-flood-portal
+
+global:
+  nodeSelector:
+    nodegroup: workload
+
+backend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: hcm-flood-backend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  env:
+    APP_ENV: "production"
+    PORT: "8000"
+    THINGSBOARD_URL: "http://iot-thingsboard.thingsboard.svc.cluster.local:8080"
+
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: hcm-flood-frontend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "hcm-flood-backend"
+  hosts:
+    - host: flood.web-ui.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /ws
+          pathType: Prefix
+          service: backend
+        - path: /
+          pathType: Prefix
+          service: frontend

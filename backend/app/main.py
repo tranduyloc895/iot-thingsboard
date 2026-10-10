@@ -1,0 +1,76 @@
+import asyncio
+import json
+from datetime import datetime
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+
+from .config import settings
+from .models.schemas import DashboardData
+from .services.tide_service import TideService
+from .services.weather_service import WeatherService
+from .services.thingsboard_service import tb_service
+
+app = FastAPI(
+    title=settings.APP_NAME,
+    description="Backend microservice kết nối ThingsBoard IoT, Open-Meteo và đẩy dữ liệu cho Web HCM Flood Tracker",
+    version="1.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/healthz")
+async def health_check():
+    return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
+
+async def build_dashboard_data() -> DashboardData:
+    devices = tb_service.get_live_devices()
+    summary = tb_service.get_city_summary(devices)
+    tides = await TideService.get_tide_data()
+    severe = tb_service.get_severe_locations()
+    
+    return DashboardData(
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        summary=summary,
+        tides=tides,
+        severe_locations=severe,
+        devices=devices
+    )
+
+@app.get("/api/v1/dashboard", response_model=DashboardData)
+async def get_dashboard():
+    return await build_dashboard_data()
+
+@app.get("/api/v1/tides")
+async def get_tides():
+    return await TideService.get_tide_data()
+
+@app.get("/api/v1/weather")
+async def get_weather():
+    return await WeatherService.get_current_weather()
+
+@app.get("/api/v1/devices")
+async def get_devices():
+    return tb_service.get_live_devices()
+
+@app.get("/api/v1/severe-locations")
+async def get_severe_locations():
+    return tb_service.get_severe_locations()
+
+@app.websocket("/ws/live")
+async def websocket_live_stream(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await build_dashboard_data()
+            await websocket.send_text(data.model_dump_json())
+            await asyncio.sleep(2.5)  # Cập nhật mỗi 2.5 giây cho frontend
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        print(f"WS error: {e}")
