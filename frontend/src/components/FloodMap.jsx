@@ -19,10 +19,10 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
       attributionControl: false
     });
 
-    // Dark Matter Tiles của CartoDB (Nền tối cực sang trọng)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // OpenStreetMap Tiles (100% miễn phí, chi tiết toàn bộ đường phố TP.HCM, không cần API Key)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd'
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     markersLayerRef.current = L.layerGroup().addTo(map);
