@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: iot-thingsboard-mqtt-lb
+  namespace: thingsboard
+  annotations:
+    # Cấp phát LoadBalancer ảo của CMC (Private IP)
+    loadbalancer.openstack.org/class: "cmc-loadbalancer-private"
+    loadbalancer.openstack.org/flavor-id: "7255d597-44dd-4e00-a6de-e0822211097e"
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 1883
+      targetPort: 8081
+      protocol: TCP
+      name: mqtt
+  selector:
+    # Bắt chính xác vào các Pod của MQTT Transport mà Helm đã tạo
+    app.kubernetes.io/name: thingsboard-mqtt
+    app.kubernetes.io/instance: iot-thingsboard-mqtt

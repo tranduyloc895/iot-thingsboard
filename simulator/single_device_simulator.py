@@ -2,6 +2,7 @@ import time
 import json
 import random
 import os
+import socket
 import paho.mqtt.client as mqtt
 
 # ==========================================
@@ -11,7 +12,9 @@ THINGSBOARD_HOST = os.getenv("THINGSBOARD_HOST", "10.0.0.225")
 PORT = int(os.getenv("PORT", "1883"))
 PROVISION_KEY = os.getenv("PROVISION_KEY", "")
 PROVISION_SECRET = os.getenv("PROVISION_SECRET", "")
-DEVICE_NAME = os.getenv("DEVICE_NAME", f"HCM_Vehicle_{random.randint(1000,9999)}")
+# Lấy hostname của container để đảm bảo 20 container không bị trùng tên thiết bị
+CONTAINER_ID = socket.gethostname()[-6:] if len(socket.gethostname()) >= 6 else socket.gethostname()
+DEVICE_NAME = os.getenv("DEVICE_NAME", f"HCM_Vehicle_{CONTAINER_ID}_{random.randint(100,999)}")
 
 # Tọa độ trung tâm TPHCM (Chợ Bến Thành)
 CENTER_LAT = 10.7725
@@ -73,18 +76,22 @@ def run_simulation(token):
         lat += random.uniform(-0.0005, 0.0005)
         lon += random.uniform(-0.0005, 0.0005)
         speed = random.uniform(20.0, 60.0)
+        water_level = random.uniform(15.0, 75.0)
+        rainfall = random.uniform(5.0, 40.0)
         temperature = random.uniform(28.0, 35.0)
         
         payload = {
             "latitude": round(lat, 5),
             "longitude": round(lon, 5),
             "speed": round(speed, 1),
-            "temperature": round(temperature, 1),
-            "status": "Moving" if speed > 30 else "Slow"
+            "temperature_c": round(temperature, 1),
+            "water_level_cm": round(water_level, 1),
+            "rainfall_mm": round(rainfall, 1),
+            "status": "warning" if water_level > 55 else ("moving" if speed > 30 else "normal")
         }
         
         client.publish("v1/devices/me/telemetry", json.dumps(payload))
-        print(f"[{DEVICE_NAME}] Đã gửi tọa độ: {payload['latitude']}, {payload['longitude']}")
+        print(f"[{DEVICE_NAME}] Data: Nước={payload['water_level_cm']}cm | Mưa={payload['rainfall_mm']}mm | Tọa độ=({payload['latitude']}, {payload['longitude']})")
         
         time.sleep(random.uniform(3, 5))
 

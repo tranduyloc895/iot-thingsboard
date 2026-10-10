@@ -1,7 +1,7 @@
 FROM python:3.9-slim
 
 # Cài đặt thư viện paho-mqtt
-RUN pip install --no-cache-dir paho-mqtt
+RUN pip install --no-cache-dir "paho-mqtt<2.0.0"
 
 # Đưa file code vào container
 WORKDIR /app
