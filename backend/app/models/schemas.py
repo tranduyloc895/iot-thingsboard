@@ -9,8 +9,12 @@ class DeviceTelemetry(BaseModel):
     water_level_cm: float
     rainfall_mm: float
     temperature_c: float
-    status: str  # SAFE, ALERT, CRITICAL
+    status: str  # SAFE, ALERT, WARNING, CRITICAL
     updated_at: str
+    road_id: Optional[str] = None
+    road_name: Optional[str] = None
+    station_node: Optional[str] = None
+    segment_idx: Optional[int] = None
 
 class TideHourlyPoint(BaseModel):
     hour: int
@@ -21,7 +25,7 @@ class TideStation(BaseModel):
     name: str
     current_level: float
     trend: str  # UP, DOWN, STABLE
-    status: str  # STABLE, WARNING, HIGH
+    status: str  # STABLE, WARNING, HIGH, CRITICAL
     peak_level: float
     peak_hour: int
     hourly_data: List[TideHourlyPoint]
@@ -36,6 +40,25 @@ class SevereLocation(BaseModel):
     latitude: float
     longitude: float
 
+class RoadNode(BaseModel):
+    id: str
+    name: str
+    latitude: float
+    longitude: float
+    water_level_cm: float
+    status: str  # SAFE, ALERT, WARNING, CRITICAL
+
+class FloodedRoad(BaseModel):
+    id: str
+    name: str
+    district: str
+    length_km: float
+    severity: str  # SAFE, ALERT, WARNING, CRITICAL
+    avg_water_cm: float
+    max_water_cm: float
+    coordinates: List[List[float]]  # List of [lat, lon]
+    nodes: List[RoadNode]
+
 class CitySummary(BaseModel):
     safe_count: int
     alert_count: int
@@ -49,3 +72,4 @@ class DashboardData(BaseModel):
     tides: List[TideStation]
     severe_locations: List[SevereLocation]
     devices: List[DeviceTelemetry]
+    roads: List[FloodedRoad] = []

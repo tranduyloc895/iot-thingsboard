@@ -232,3 +232,40 @@ body, html {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* Neon Flooded Road Polylines & Nodes */
+.neon-road-halo {
+  filter: blur(5px);
+  pointer-events: none;
+}
+
+.neon-road-line {
+  filter: drop-shadow(0 0 6px currentColor);
+  cursor: pointer;
+  transition: stroke-width 0.2s ease, opacity 0.2s ease;
+}
+
+.neon-road-line:hover {
+  stroke-width: 10px !important;
+  opacity: 1 !important;
+}
+
+.neon-road-pulse {
+  animation: neon-road-glow 2s ease-in-out infinite;
+}
+
+@keyframes neon-road-glow {
+  0%, 100% {
+    stroke-opacity: 0.95;
+    filter: drop-shadow(0 0 6px #ff0055);
+  }
+  50% {
+    stroke-opacity: 0.7;
+    filter: drop-shadow(0 0 14px #ff0055);
+  }
+}
+
+.custom-road-node-icon {
+  background: transparent;
+  border: none;
+}
