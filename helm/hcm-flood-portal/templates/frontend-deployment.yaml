@@ -18,6 +18,10 @@ spec:
         app.kubernetes.io/name: hcm-flood-frontend
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.global.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -3,6 +3,10 @@
 global:
   nodeSelector:
     nodegroup: workload
+  imagePullSecrets: []
+  # Example if using private GHCR:
+  # imagePullSecrets:
+  #   - name: ghcr-secret
 
 backend:
   enabled: true
