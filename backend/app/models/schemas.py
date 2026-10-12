@@ -15,6 +15,9 @@ class DeviceTelemetry(BaseModel):
     road_name: Optional[str] = None
     station_node: Optional[str] = None
     segment_idx: Optional[int] = None
+    parent_id: Optional[str] = None
+    parent_name: Optional[str] = None
+    parent_type: Optional[str] = None  # ROAD, ZONE
 
 class TideHourlyPoint(BaseModel):
     hour: int
@@ -56,7 +59,21 @@ class FloodedRoad(BaseModel):
     severity: str  # SAFE, ALERT, WARNING, CRITICAL
     avg_water_cm: float
     max_water_cm: float
+    avoid_advice: Optional[str] = None
     coordinates: List[List[float]]  # List of [lat, lon]
+    nodes: List[RoadNode]
+
+class FloodZone(BaseModel):
+    id: str
+    name: str
+    district: str
+    area_km2: float
+    severity: str  # SAFE, ALERT, WARNING, CRITICAL
+    avg_water_cm: float
+    max_water_cm: float
+    center: List[float]  # [lat, lon]
+    polygon: List[List[float]]  # List of [lat, lon]
+    avoid_advice: Optional[str] = None
     nodes: List[RoadNode]
 
 class CitySummary(BaseModel):
@@ -73,3 +90,4 @@ class DashboardData(BaseModel):
     severe_locations: List[SevereLocation]
     devices: List[DeviceTelemetry]
     roads: List[FloodedRoad] = []
+    zones: List[FloodZone] = []

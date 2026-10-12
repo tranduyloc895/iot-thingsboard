@@ -34,6 +34,7 @@ async def build_dashboard_data() -> DashboardData:
     tides = await TideService.get_tide_data()
     severe = tb_service.get_severe_locations()
     roads = tb_service.get_flooded_roads(devices)
+    zones = tb_service.get_flood_zones(devices)
     
     return DashboardData(
         timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -41,7 +42,8 @@ async def build_dashboard_data() -> DashboardData:
         tides=tides,
         severe_locations=severe,
         devices=devices,
-        roads=roads
+        roads=roads,
+        zones=zones
     )
 
 @app.get("/api/v1/dashboard", response_model=DashboardData)
@@ -52,6 +54,11 @@ async def get_dashboard():
 async def get_roads():
     devices = await tb_service.get_live_devices()
     return tb_service.get_flooded_roads(devices)
+
+@app.get("/api/v1/zones")
+async def get_zones():
+    devices = await tb_service.get_live_devices()
+    return tb_service.get_flood_zones(devices)
 
 @app.get("/api/v1/tides")
 async def get_tides():
