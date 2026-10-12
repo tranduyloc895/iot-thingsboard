@@ -1,21 +1,20 @@
-name: Build and Push Images to GHCR
+name: Frontend CI - Build & Push
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'backend/**'
       - 'frontend/**'
-      - '.github/workflows/docker-build.yml'
-  workflow_dispatch: # Cho phép bấm chạy thủ công trên GitHub UI
+      - '.github/workflows/frontend-ci.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
 
 jobs:
-  build-and-push:
+  build-and-push-frontend:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,16 +30,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build & Push Backend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/tranduyloc895/hcm-flood-backend:latest
-            ghcr.io/tranduyloc895/hcm-flood-backend:${{ github.sha }}
 
       - name: Build & Push Frontend
         uses: docker/build-push-action@v6
