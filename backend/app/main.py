@@ -29,7 +29,7 @@ async def health_check():
     return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
 
 async def build_dashboard_data() -> DashboardData:
-    devices = tb_service.get_live_devices()
+    devices = await tb_service.get_live_devices()
     summary = tb_service.get_city_summary(devices)
     tides = await TideService.get_tide_data()
     severe = tb_service.get_severe_locations()
@@ -56,7 +56,7 @@ async def get_weather():
 
 @app.get("/api/v1/devices")
 async def get_devices():
-    return tb_service.get_live_devices()
+    return await tb_service.get_live_devices()
 
 @app.get("/api/v1/severe-locations")
 async def get_severe_locations():

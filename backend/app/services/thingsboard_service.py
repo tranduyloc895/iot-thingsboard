@@ -1,63 +1,239 @@
 import random
+import time
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Dict, Any, Optional
+import httpx
+from ..config import settings
 from ..models.schemas import DeviceTelemetry, SevereLocation, CitySummary
 
-# 20 điểm ban đầu trên địa bàn TP.HCM (Quận 1, 2/Thủ Đức, 4, 7, Bình Thạnh, 8, Phú Nhuận...)
-HOTSPOTS: List[Tuple[str, str, float, float, float]] = [
-    ("VN-HCM-001", "Sensor Car D7-01", 10.7412, 106.7285, 48.5),  # Huỳnh Tấn Phát, Q7 - Ngập nặng
-    ("VN-HCM-002", "Sensor Car D7-02", 10.7550, 106.7120, 42.0),  # Trần Xuân Soạn, Q7
-    ("VN-HCM-003", "Sensor Car D2-01", 10.8035, 106.7321, 38.0),  # Thảo Điền, TP Thủ Đức
-    ("VN-HCM-004", "Sensor Car D2-02", 10.8090, 106.7380, 45.2),  # Quốc Hương, Thảo Điền
-    ("VN-HCM-005", "Sensor Car D1-01", 10.7670, 106.6925, 24.5),  # Bùi Viện, Q1
-    ("VN-HCM-006", "Sensor Car D1-02", 10.7715, 106.7020, 12.0),  # Hàm Nghi, Q1
-    ("VN-HCM-007", "Sensor Car BT-01", 10.7950, 106.7150, 36.8),  # Nguyễn Hữu Cảnh, Bình Thạnh
-    ("VN-HCM-008", "Sensor Car BT-02", 10.8120, 106.7110, 22.0),  # Ung Văn Khiêm, Bình Thạnh
-    ("VN-HCM-009", "Sensor Car D8-01", 10.7380, 106.6710, 39.5),  # Phạm Thế Hiển, Q8
-    ("VN-HCM-010", "Sensor Car D4-01", 10.7600, 106.7050, 18.0),  # Đoàn Văn Bơ, Q4
-    ("VN-HCM-011", "Sensor Car D5-01", 10.7540, 106.6630, 14.5),  # Trần Hưng Đạo, Q5
-    ("VN-HCM-012", "Sensor Car D3-01", 10.7810, 106.6850, 10.0),  # Nam Kỳ Khởi Nghĩa, Q3
-    ("VN-HCM-013", "Sensor Car TB-01", 10.7980, 106.6540, 16.0),  # Cộng Hòa, Tân Bình
-    ("VN-HCM-014", "Sensor Car PN-01", 10.7990, 106.6820, 11.5),  # Phan Xích Long, Phú Nhuận
-    ("VN-HCM-015", "Sensor Car GV-01", 10.8350, 106.6720, 29.0),  # Lê Đức Thọ, Gò Vấp
-    ("VN-HCM-016", "Sensor Car TD-01", 10.8520, 106.7550, 15.0),  # Võ Văn Ngân, Thủ Đức
-    ("VN-HCM-017", "Sensor Car BCh-01", 10.7020, 106.6020, 31.0), # Quốc Lộ 1A, Bình Chánh
-    ("VN-HCM-018", "Sensor Car D12-01", 10.8650, 106.6430, 19.5), # Nguyễn Văn Quá, Q12
-    ("VN-HCM-019", "Sensor Car D6-01", 10.7480, 106.6420, 28.0),  # Hậu Giang, Q6
-    ("VN-HCM-020", "Sensor Car D10-01", 10.7720, 106.6680, 13.0), # Ba Tháng Hai, Q10
+# 10 ĐIỂM NGẬP TRỌNG ĐIỂM TP.HCM (KHỚP HOÀN TOÀN VỚI SIMULATOR)
+HOTSPOTS_DATA = [
+    {
+        "id": "loc-1",
+        "name": "Huỳnh Tấn Phát",
+        "district": "Quận 7",
+        "lat": 10.7412,
+        "lon": 106.7285,
+        "water_level_m": 1.68,
+        "severity": "CRITICAL"
+    },
+    {
+        "id": "loc-2",
+        "name": "Trần Xuân Soạn",
+        "district": "Quận 7",
+        "lat": 10.7550,
+        "lon": 106.7120,
+        "water_level_m": 1.52,
+        "severity": "CRITICAL"
+    },
+    {
+        "id": "loc-3",
+        "name": "Quốc Hương - Thảo Điền",
+        "district": "TP. Thủ Đức",
+        "lat": 10.8035,
+        "lon": 106.7321,
+        "water_level_m": 1.58,
+        "severity": "CRITICAL"
+    },
+    {
+        "id": "loc-4",
+        "name": "Chợ Thủ Đức (Đặng Thị Rành)",
+        "district": "TP. Thủ Đức",
+        "lat": 10.8525,
+        "lon": 106.7582,
+        "water_level_m": 1.75,
+        "severity": "CRITICAL"
+    },
+    {
+        "id": "loc-5",
+        "name": "Nguyễn Hữu Cảnh",
+        "district": "Bình Thạnh",
+        "lat": 10.7950,
+        "lon": 106.7150,
+        "water_level_m": 1.45,
+        "severity": "CRITICAL"
+    },
+    {
+        "id": "loc-6",
+        "name": "Ung Văn Khiêm - Đinh Bộ Lĩnh",
+        "district": "Bình Thạnh",
+        "lat": 10.8120,
+        "lon": 106.7110,
+        "water_level_m": 1.32,
+        "severity": "WARNING"
+    },
+    {
+        "id": "loc-7",
+        "name": "Lê Đức Thọ - Nguyễn Văn Khối",
+        "district": "Gò Vấp",
+        "lat": 10.8350,
+        "lon": 106.6720,
+        "water_level_m": 1.48,
+        "severity": "CRITICAL"
+    },
+    {
+        "id": "loc-8",
+        "name": "Phan Huy Ích - Phạm Văn Chiêu",
+        "district": "Gò Vấp",
+        "lat": 10.8285,
+        "lon": 106.6390,
+        "water_level_m": 1.38,
+        "severity": "WARNING"
+    },
+    {
+        "id": "loc-9",
+        "name": "Nguyễn Văn Quá - Song hành QL22",
+        "district": "Quận 12",
+        "lat": 10.8465,
+        "lon": 106.6210,
+        "water_level_m": 1.42,
+        "severity": "CRITICAL"
+    },
+    {
+        "id": "loc-10",
+        "name": "Hồ Học Lãm - An Dương Vương",
+        "district": "Bình Tân",
+        "lat": 10.7180,
+        "lon": 106.6185,
+        "water_level_m": 1.46,
+        "severity": "CRITICAL"
+    }
 ]
 
 class ThingsBoardService:
     def __init__(self):
-        # Lưu giữ state tọa độ của 20 xe để chúng di chuyển nhẹ nhàng trên map
-        self.vehicles = []
-        for dev_id, name, lat, lon, base_water in HOTSPOTS:
-            self.vehicles.append({
-                "device_id": dev_id,
-                "name": name,
-                "lat": lat,
-                "lon": lon,
-                "base_water": base_water
+        self.jwt_token: Optional[str] = None
+        self.token_expiry: float = 0
+        self.tb_client = httpx.AsyncClient(timeout=4.0)
+        self.fallback_vehicles = self._generate_50_patrol_vehicles()
+
+    def _generate_50_patrol_vehicles(self) -> List[Dict[str, Any]]:
+        vehicles = []
+        for i in range(50):
+            hs = HOTSPOTS_DATA[i % len(HOTSPOTS_DATA)]
+            vehicles.append({
+                "device_id": f"VN-HCM-{i+1:03d}",
+                "name": f"Sensor Car {hs['district'][:3].strip()}-{i//10 + 1:02d}",
+                "lat": hs["lat"] + (random.random() - 0.5) * 0.005,
+                "lon": hs["lon"] + (random.random() - 0.5) * 0.005,
+                "base_water": hs["water_level_m"] * 28.0,
+                "hotspot": hs
             })
+        return vehicles
 
-    def get_live_devices(self) -> List[DeviceTelemetry]:
-        updated_list = []
+    async def _get_auth_token(self) -> Optional[str]:
+        if self.jwt_token and time.time() < self.token_expiry:
+            return self.jwt_token
+
+        urls_to_try = [
+            settings.THINGSBOARD_URL,
+            "http://thingsboard-node.thingsboard.svc.cluster.local:8080",
+            "http://10.0.0.225:8080"
+        ]
+
+        for base_url in urls_to_try:
+            try:
+                login_url = f"{base_url.rstrip('/')}/api/auth/login"
+                resp = await self.tb_client.post(login_url, json={
+                    "username": settings.THINGSBOARD_USERNAME,
+                    "password": settings.THINGSBOARD_PASSWORD
+                })
+                if resp.status_code == 200:
+                    data = resp.json()
+                    self.jwt_token = data.get("token")
+                    self.token_expiry = time.time() + 3600
+                    return self.jwt_token
+            except Exception:
+                continue
+
+        return None
+
+    async def _fetch_devices_from_tb(self) -> Optional[List[DeviceTelemetry]]:
+        token = await self._get_auth_token()
+        if not token:
+            return None
+
+        headers = {"X-Authorization": f"Bearer {token}"}
+        base_url = settings.THINGSBOARD_URL.rstrip('/')
+
+        try:
+            resp = await self.tb_client.get(
+                f"{base_url}/api/tenant/devices?pageSize=100&page=0",
+                headers=headers
+            )
+            if resp.status_code != 200:
+                return None
+
+            device_list = resp.json().get("data", [])
+            if not device_list:
+                return None
+
+            results: List[DeviceTelemetry] = []
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            for dev in device_list:
+                dev_id = dev["id"]["id"]
+                dev_name = dev["name"]
+
+                # Lấy telemetry mới nhất
+                telemetry_resp = await self.tb_client.get(
+                    f"{base_url}/api/plugins/telemetry/DEVICE/{dev_id}/values/timeseries",
+                    headers=headers
+                )
+                
+                lat, lon, water, rain, temp, status = 10.7725, 106.6980, 20.0, 15.0, 30.0, "SAFE"
+                if telemetry_resp.status_code == 200:
+                    t_data = telemetry_resp.json()
+                    if "latitude" in t_data:
+                        lat = float(t_data["latitude"][0]["value"])
+                    if "longitude" in t_data:
+                        lon = float(t_data["longitude"][0]["value"])
+                    if "water_level_cm" in t_data:
+                        water = float(t_data["water_level_cm"][0]["value"])
+                    if "rainfall_mm" in t_data:
+                        rain = float(t_data["rainfall_mm"][0]["value"])
+                    if "temperature_c" in t_data:
+                        temp = float(t_data["temperature_c"][0]["value"])
+                    if "status" in t_data:
+                        status = str(t_data["status"][0]["value"]).upper()
+                    else:
+                        status = "CRITICAL" if water >= 40.0 else ("ALERT" if water >= 25.0 else "SAFE")
+
+                results.append(DeviceTelemetry(
+                    device_id=dev_id,
+                    name=dev_name,
+                    latitude=lat,
+                    longitude=lon,
+                    water_level_cm=round(water, 1),
+                    rainfall_mm=round(rain, 1),
+                    temperature_c=round(temp, 1),
+                    status=status,
+                    updated_at=now_str
+                ))
+
+            if results:
+                return results
+        except Exception:
+            pass
+
+        return None
+
+    async def get_live_devices(self) -> List[DeviceTelemetry]:
+        # 1. Thử lấy từ ThingsBoard REST API
+        real_devices = await self._fetch_devices_from_tb()
+        if real_devices and len(real_devices) > 0:
+            return real_devices
+
+        # 2. Fallback: 50 xe mô phỏng tuần tra 10 điểm ngập
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        updated_list = []
 
-        for v in self.vehicles:
-            # Mô phỏng xe di chuyển ngẫu nhiên cự ly nhỏ (như đang chạy thật trên đường)
-            v["lat"] += (random.random() - 0.5) * 0.0004
-            v["lon"] += (random.random() - 0.5) * 0.0004
+        for v in self.fallback_vehicles:
+            v["lat"] += (random.random() - 0.5) * 0.0003
+            v["lon"] += (random.random() - 0.5) * 0.0003
             
-            # Mực nước biến động nhẹ quanh base_water
-            water_val = round(max(5.0, v["base_water"] + (random.random() - 0.5) * 3.0), 1)
-            
-            if water_val >= 40.0:
-                status = "CRITICAL"
-            elif water_val >= 25.0:
-                status = "ALERT"
-            else:
-                status = "SAFE"
+            water_val = round(max(5.0, v["base_water"] + (random.random() - 0.5) * 3.5), 1)
+            status = "CRITICAL" if water_val >= 40.0 else ("ALERT" if water_val >= 25.0 else "SAFE")
 
             updated_list.append(DeviceTelemetry(
                 device_id=v["device_id"],
@@ -70,6 +246,7 @@ class ThingsBoardService:
                 status=status,
                 updated_at=now_str
             ))
+
         return updated_list
 
     def get_city_summary(self, devices: List[DeviceTelemetry]) -> CitySummary:
@@ -87,38 +264,19 @@ class ThingsBoardService:
 
     @staticmethod
     def get_severe_locations() -> List[SevereLocation]:
-        # Khớp chính xác với danh sách các điểm nóng trong bản Mockup HCM Flood Tracker
+        # Trả về toàn bộ 10 điểm ngập nóng thực tế của TP.HCM
         return [
             SevereLocation(
-                id="loc-1",
-                name="Huynh Tan Phat",
-                district="District 7",
-                water_level_m=1.68,
-                severity="CRITICAL",
-                minutes_ago=10,
-                latitude=10.7412,
-                longitude=106.7285
-            ),
-            SevereLocation(
-                id="loc-2",
-                name="Thao Dien",
-                district="District 2",
-                water_level_m=1.35,
-                severity="WARNING",
-                minutes_ago=8,
-                latitude=10.8035,
-                longitude=106.7321
-            ),
-            SevereLocation(
-                id="loc-3",
-                name="Bui Vien St.",
-                district="District 1",
-                water_level_m=1.10,
-                severity="ALERT",
-                minutes_ago=15,
-                latitude=10.7670,
-                longitude=106.6925
+                id=hs["id"],
+                name=hs["name"],
+                district=hs["district"],
+                water_level_m=hs["water_level_m"],
+                severity=hs["severity"],
+                minutes_ago=random.randint(2, 12),
+                latitude=hs["lat"],
+                longitude=hs["lon"]
             )
+            for hs in HOTSPOTS_DATA
         ]
 
 tb_service = ThingsBoardService()

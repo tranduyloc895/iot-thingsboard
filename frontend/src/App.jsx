@@ -3,15 +3,47 @@ import FloodMap from './components/FloodMap';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 
-// Dữ liệu baseline ban đầu phòng trường hợp backend chưa kịp khởi động
+// 10 ĐIỂM NGẬP TRỌNG ĐIỂM TP.HCM
+const HOTSPOTS_INITIAL = [
+  { id: 'loc-1', name: 'Huỳnh Tấn Phát', district: 'Quận 7', water_level_m: 1.68, severity: 'CRITICAL', minutes_ago: 2, latitude: 10.7412, longitude: 106.7285 },
+  { id: 'loc-2', name: 'Trần Xuân Soạn', district: 'Quận 7', water_level_m: 1.52, severity: 'CRITICAL', minutes_ago: 5, latitude: 10.7550, longitude: 106.7120 },
+  { id: 'loc-3', name: 'Quốc Hương - Thảo Điền', district: 'TP. Thủ Đức', water_level_m: 1.58, severity: 'CRITICAL', minutes_ago: 4, latitude: 10.8035, longitude: 106.7321 },
+  { id: 'loc-4', name: 'Chợ Thủ Đức (Đặng Thị Rành)', district: 'TP. Thủ Đức', water_level_m: 1.75, severity: 'CRITICAL', minutes_ago: 3, latitude: 10.8525, longitude: 106.7582 },
+  { id: 'loc-5', name: 'Nguyễn Hữu Cảnh', district: 'Bình Thạnh', water_level_m: 1.45, severity: 'CRITICAL', minutes_ago: 7, latitude: 10.7950, longitude: 106.7150 },
+  { id: 'loc-6', name: 'Ung Văn Khiêm - Đinh Bộ Lĩnh', district: 'Bình Thạnh', water_level_m: 1.32, severity: 'WARNING', minutes_ago: 9, latitude: 10.8120, longitude: 106.7110 },
+  { id: 'loc-7', name: 'Lê Đức Thọ - Nguyễn Văn Khối', district: 'Gò Vấp', water_level_m: 1.48, severity: 'CRITICAL', minutes_ago: 6, latitude: 10.8350, longitude: 106.6720 },
+  { id: 'loc-8', name: 'Phan Huy Ích - Phạm Văn Chiêu', district: 'Gò Vấp', water_level_m: 1.38, severity: 'WARNING', minutes_ago: 8, latitude: 10.8285, longitude: 106.6390 },
+  { id: 'loc-9', name: 'Nguyễn Văn Quá - QL22', district: 'Quận 12', water_level_m: 1.42, severity: 'CRITICAL', minutes_ago: 5, latitude: 10.8465, longitude: 106.6210 },
+  { id: 'loc-10', name: 'Hồ Học Lãm - An Dương Vương', district: 'Bình Tân', water_level_m: 1.46, severity: 'CRITICAL', minutes_ago: 4, latitude: 10.7180, longitude: 106.6185 }
+];
+
+// 50 XE TUẦN TRA PHÂN BỔ ĐỀU 10 ĐIỂM
+const DEVICES_INITIAL = Array.from({ length: 50 }, (_, i) => {
+  const hs = HOTSPOTS_INITIAL[i % HOTSPOTS_INITIAL.length];
+  const water = Number((hs.water_level_m * 28 + (Math.sin(i) * 6)).toFixed(1));
+  const isCrit = water >= 40.0;
+  const isAlert = water >= 25.0;
+  return {
+    device_id: `VN-HCM-${String(i + 1).padStart(3, '0')}`,
+    name: `Sensor Car ${hs.district.split(' ')[0]}-${String((i % 5) + 1).padStart(2, '0')}`,
+    latitude: Number((hs.latitude + Math.sin(i * 1.5) * 0.003).toFixed(5)),
+    longitude: Number((hs.longitude + Math.cos(i * 1.5) * 0.003).toFixed(5)),
+    water_level_cm: water,
+    rainfall_mm: Number((25.0 + Math.sin(i) * 10).toFixed(1)),
+    temperature_c: Number((29.5 + Math.cos(i) * 1.5).toFixed(1)),
+    status: isCrit ? 'CRITICAL' : (isAlert ? 'ALERT' : 'SAFE'),
+    updated_at: new Date().toLocaleTimeString()
+  };
+});
+
 const INITIAL_DATA = {
   timestamp: new Date().toISOString(),
   summary: {
-    safe_count: 14,
-    alert_count: 4,
-    critical_count: 2,
-    avg_water_level_cm: 22.4,
-    total_active_devices: 20
+    safe_count: 18,
+    alert_count: 17,
+    critical_count: 15,
+    avg_water_level_cm: 36.8,
+    total_active_devices: 50
   },
   tides: [
     {
@@ -29,7 +61,7 @@ const INITIAL_DATA = {
     },
     {
       station_id: 'nha_be',
-      name: 'NHA BE',
+      name: 'NHA BE (Dong Dien)',
       current_level: 1.28,
       trend: 'UP',
       status: 'STABLE',
@@ -39,62 +71,36 @@ const INITIAL_DATA = {
         hour: h,
         level: Number((0.85 + 0.48 * Math.sin((h - 4.5) * Math.PI / 6) + 0.08 * Math.sin((h - 1.5) * Math.PI / 3)).toFixed(2))
       }))
-    }
-  ],
-  severe_locations: [
-    {
-      id: 'loc-1',
-      name: 'Huynh Tan Phat',
-      district: 'District 7',
-      water_level_m: 1.68,
-      severity: 'CRITICAL',
-      minutes_ago: 10,
-      latitude: 10.7412,
-      longitude: 106.7285
     },
     {
-      id: 'loc-2',
-      name: 'Thao Dien',
-      district: 'District 2',
-      water_level_m: 1.35,
-      severity: 'WARNING',
-      minutes_ago: 8,
-      latitude: 10.8035,
-      longitude: 106.7321
+      station_id: 'nhieu_loc',
+      name: 'NHIEU LOC - THI NGHE',
+      current_level: 1.22,
+      trend: 'UP',
+      status: 'STABLE',
+      peak_level: 1.36,
+      peak_hour: 11,
+      hourly_data: Array.from({ length: 25 }, (_, h) => ({
+        hour: h,
+        level: Number((0.75 + 0.42 * Math.sin((h - 5.2) * Math.PI / 6) + 0.09 * Math.sin((h - 2.2) * Math.PI / 3)).toFixed(2))
+      }))
     },
     {
-      id: 'loc-3',
-      name: 'Bui Vien St.',
-      district: 'District 1',
-      water_level_m: 1.10,
-      severity: 'ALERT',
-      minutes_ago: 15,
-      latitude: 10.7670,
-      longitude: 106.6925
+      station_id: 'kenh_doi',
+      name: 'KENH DOI - KENH TE',
+      current_level: 1.38,
+      trend: 'UP',
+      status: 'HIGH',
+      peak_level: 1.48,
+      peak_hour: 10,
+      hourly_data: Array.from({ length: 25 }, (_, h) => ({
+        hour: h,
+        level: Number((0.88 + 0.52 * Math.sin((h - 4.8) * Math.PI / 6) + 0.1 * Math.sin((h - 1.8) * Math.PI / 3)).toFixed(2))
+      }))
     }
   ],
-  devices: [
-    { device_id: 'VN-HCM-001', name: 'Sensor Car D7-01', latitude: 10.7412, longitude: 106.7285, water_level_cm: 48.5, rainfall_mm: 32.0, temperature_c: 30.1, status: 'CRITICAL', updated_at: '22:45:00' },
-    { device_id: 'VN-HCM-002', name: 'Sensor Car D7-02', latitude: 10.7550, longitude: 106.7120, water_level_cm: 42.0, rainfall_mm: 28.0, temperature_c: 30.5, status: 'CRITICAL', updated_at: '22:45:02' },
-    { device_id: 'VN-HCM-003', name: 'Sensor Car D2-01', latitude: 10.8035, longitude: 106.7321, water_level_cm: 38.0, rainfall_mm: 25.5, temperature_c: 29.8, status: 'ALERT', updated_at: '22:45:01' },
-    { device_id: 'VN-HCM-004', name: 'Sensor Car D2-02', latitude: 10.8090, longitude: 106.7380, water_level_cm: 45.2, rainfall_mm: 34.0, temperature_c: 30.0, status: 'CRITICAL', updated_at: '22:45:03' },
-    { device_id: 'VN-HCM-005', name: 'Sensor Car D1-01', latitude: 10.7670, longitude: 106.6925, water_level_cm: 24.5, rainfall_mm: 18.0, temperature_c: 31.0, status: 'ALERT', updated_at: '22:45:05' },
-    { device_id: 'VN-HCM-006', name: 'Sensor Car D1-02', latitude: 10.7715, longitude: 106.7020, water_level_cm: 12.0, rainfall_mm: 12.0, temperature_c: 31.2, status: 'SAFE', updated_at: '22:45:00' },
-    { device_id: 'VN-HCM-007', name: 'Sensor Car BT-01', latitude: 10.7950, longitude: 106.7150, water_level_cm: 36.8, rainfall_mm: 24.0, temperature_c: 30.2, status: 'ALERT', updated_at: '22:45:02' },
-    { device_id: 'VN-HCM-008', name: 'Sensor Car BT-02', latitude: 10.8120, longitude: 106.7110, water_level_cm: 22.0, rainfall_mm: 15.0, temperature_c: 30.5, status: 'SAFE', updated_at: '22:45:04' },
-    { device_id: 'VN-HCM-009', name: 'Sensor Car D8-01', latitude: 10.7380, longitude: 106.6710, water_level_cm: 39.5, rainfall_mm: 29.0, temperature_c: 29.5, status: 'ALERT', updated_at: '22:45:01' },
-    { device_id: 'VN-HCM-010', name: 'Sensor Car D4-01', latitude: 10.7600, longitude: 106.7050, water_level_cm: 18.0, rainfall_mm: 14.0, temperature_c: 30.8, status: 'SAFE', updated_at: '22:45:05' },
-    { device_id: 'VN-HCM-011', name: 'Sensor Car D5-01', latitude: 10.7540, longitude: 106.6630, water_level_cm: 14.5, rainfall_mm: 11.0, temperature_c: 31.0, status: 'SAFE', updated_at: '22:45:03' },
-    { device_id: 'VN-HCM-012', name: 'Sensor Car D3-01', latitude: 10.7810, longitude: 106.6850, water_level_cm: 10.0, rainfall_mm: 8.0, temperature_c: 31.5, status: 'SAFE', updated_at: '22:45:02' },
-    { device_id: 'VN-HCM-013', name: 'Sensor Car TB-01', latitude: 10.7980, longitude: 106.6540, water_level_cm: 16.0, rainfall_mm: 14.0, temperature_c: 30.7, status: 'SAFE', updated_at: '22:45:00' },
-    { device_id: 'VN-HCM-014', name: 'Sensor Car PN-01', latitude: 10.7990, longitude: 106.6820, water_level_cm: 11.5, rainfall_mm: 10.0, temperature_c: 31.0, status: 'SAFE', updated_at: '22:45:04' },
-    { device_id: 'VN-HCM-015', name: 'Sensor Car GV-01', latitude: 10.8350, longitude: 106.6720, water_level_cm: 29.0, rainfall_mm: 20.0, temperature_c: 30.0, status: 'ALERT', updated_at: '22:45:02' },
-    { device_id: 'VN-HCM-016', name: 'Sensor Car TD-01', latitude: 10.8520, longitude: 106.7550, water_level_cm: 15.0, rainfall_mm: 13.0, temperature_c: 30.4, status: 'SAFE', updated_at: '22:45:01' },
-    { device_id: 'VN-HCM-017', name: 'Sensor Car BCh-01', latitude: 10.7020, longitude: 106.6020, water_level_cm: 31.0, rainfall_mm: 22.0, temperature_c: 29.8, status: 'ALERT', updated_at: '22:45:05' },
-    { device_id: 'VN-HCM-018', name: 'Sensor Car D12-01', latitude: 10.8650, longitude: 106.6430, water_level_cm: 19.5, rainfall_mm: 16.0, temperature_c: 30.2, status: 'SAFE', updated_at: '22:45:03' },
-    { device_id: 'VN-HCM-019', name: 'Sensor Car D6-01', latitude: 10.7480, longitude: 106.6420, water_level_cm: 28.0, rainfall_mm: 19.0, temperature_c: 30.1, status: 'ALERT', updated_at: '22:45:04' },
-    { device_id: 'VN-HCM-020', name: 'Sensor Car D10-01', latitude: 10.7720, longitude: 106.6680, water_level_cm: 13.0, rainfall_mm: 10.0, temperature_c: 31.0, status: 'SAFE', updated_at: '22:45:02' }
-  ]
+  severe_locations: HOTSPOTS_INITIAL,
+  devices: DEVICES_INITIAL
 };
 
 export default function App() {
@@ -102,7 +108,6 @@ export default function App() {
   const [selectedLocation, setSelectedLocation] = useState(null);
 
   useEffect(() => {
-    // Xác định URL WebSocket phù hợp (môi trường dev port 8000 hoặc K8s ingress)
     const host = window.location.hostname || 'localhost';
     const isLocalDev = window.location.port === '5173' || window.location.port === '3000';
     const wsUrl = isLocalDev 
