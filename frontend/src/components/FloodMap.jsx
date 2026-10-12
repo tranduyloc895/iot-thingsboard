@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
-import { Navigation, Plus, Minus, Layers } from 'lucide-react';
+import { Navigation, Plus, Minus, Layers, Waves } from 'lucide-react';
 
 export default function FloodMap({ devices, severeLocations, selectedLocation }) {
   const mapContainerRef = useRef(null);
@@ -8,28 +8,31 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
   const markersLayerRef = useRef(null);
   const severeLayerRef = useRef(null);
   const floodZonesLayerRef = useRef(null);
+  const streamlinesLayerRef = useRef(null);
 
   const [showFloodZones, setShowFloodZones] = useState(true);
+  const [showStreamlines, setShowStreamlines] = useState(true);
 
   // Khởi tạo Leaflet Map
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [10.7769, 106.7009],
+      center: [10.7850, 106.7050],
       zoom: 12,
       zoomControl: false,
       attributionControl: false
     });
 
-    // OpenStreetMap Tiles
+    // OpenStreetMap Tiles nền tối cao cấp
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Thứ tự layer: Vùng ngập ở dưới cùng -> Beacons ngập lớn -> Markers xe IoT
+    // Thứ tự hiển thị: Vùng ngập -> Luồng nước -> Điểm thủy chí -> Xe IoT
     floodZonesLayerRef.current = L.layerGroup().addTo(map);
+    streamlinesLayerRef.current = L.layerGroup().addTo(map);
     severeLayerRef.current = L.layerGroup().addTo(map);
     markersLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
@@ -40,118 +43,175 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
     };
   }, []);
 
-  // Cập nhật vùng ngập diện rộng (Dynamic Flood Buffer Zones - Cách 1)
+  // Cập nhật Vùng nước ngập lan tỏa & Luồng nước động (Water Inundation & Flow Streamlines)
   useEffect(() => {
-    if (!mapRef.current || !floodZonesLayerRef.current) return;
+    if (!mapRef.current || !floodZonesLayerRef.current || !streamlinesLayerRef.current) return;
 
     floodZonesLayerRef.current.clearLayers();
+    streamlinesLayerRef.current.clearLayers();
 
-    if (!showFloodZones) return;
+    if (!showFloodZones || !severeLocations) return;
 
-    // 1. Vùng ngập diện rộng từ các điểm ngập nghiêm trọng (Severe Locations)
-    if (severeLocations) {
-      severeLocations.forEach(loc => {
-        const isCrit = loc.severity === 'CRITICAL';
-        const color = isCrit ? '#f43f5e' : '#f59e0b';
-        // Bán kính vùng ngập tính theo mực nước triều (500m - 1200m)
-        const radius = Math.round(Math.min(1200, Math.max(500, loc.water_level_m * 450)));
+    severeLocations.forEach(loc => {
+      const isCrit = loc.severity === 'CRITICAL';
+      const color = isCrit ? '#f43f5e' : (loc.severity === 'WARNING' ? '#f59e0b' : '#38bdf8');
+      
+      // Bán kính vùng ngập theo mực nước thực tế (600m - 1000m)
+      const radius = Math.round(Math.min(1000, Math.max(550, loc.water_level_m * 460)));
 
-        // Vòng ảnh hưởng lan tỏa bên ngoài (Outer Buffer Zone với animation sóng loang)
-        const outerCircle = L.circle([loc.latitude, loc.longitude], {
-          radius: radius,
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.16,
-          weight: 1.5,
-          dashArray: '6, 6',
-          className: 'flood-pulse-zone'
-        });
+      // 1. Sóng nước dâng đa tầng (Concentric Expanding Water Wave Currents)
+      // Vòng ngoài cùng: Sóng nước loang rộng mờ ảo
+      const outerWave = L.circle([loc.latitude, loc.longitude], {
+        radius: radius,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.10,
+        weight: 1.5,
+        className: 'water-ripple-wave'
+      });
 
-        // Vòng lõi ngập sâu trung tâm (Core Inundation Zone)
-        const innerCircle = L.circle([loc.latitude, loc.longitude], {
-          radius: Math.round(radius * 0.42),
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.38,
-          weight: 2,
-          className: 'flood-core-zone'
-        });
+      // Vòng giữa: Vùng ngập trung gian
+      const midWave = L.circle([loc.latitude, loc.longitude], {
+        radius: Math.round(radius * 0.62),
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.20,
+        weight: 2,
+        dashArray: '5, 5',
+        className: 'flood-pulse-zone'
+      });
 
-        const zonePopup = `
-          <div style="padding: 10px; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-              <span style="font-size: 14px;">🌊</span>
-              <span style="font-weight: 800; font-size: 14px; color: #f8fafc;">VÙNG NGẬP DIỆN RỘNG</span>
+      // Vòng lõi: Rốn trũng ngập sâu nhất
+      const coreInundation = L.circle([loc.latitude, loc.longitude], {
+        radius: Math.round(radius * 0.32),
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.38,
+        weight: 2.5,
+        className: 'flood-core-zone'
+      });
+
+      const popupContent = `
+        <div style="padding: 10px; font-family: 'Plus Jakarta Sans', sans-serif;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span style="font-size: 16px;">🌊</span>
+            <span style="font-weight: 800; font-size: 14px; color: #f8fafc;">VÙNG NGẬP LƯU VỰC</span>
+          </div>
+          <div style="font-size: 13px; font-weight: 700; color: ${color}; margin-bottom: 8px;">
+            ${loc.name} (${loc.district})
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px; border-radius: 8px; font-size: 12px; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: #94a3b8;">Mực nước đỉnh triều:</span>
+              <span style="font-weight: 800; color: ${color}; font-family: 'Space Grotesk';">↑ ${loc.water_level_m} m</span>
             </div>
-            <div style="font-size: 13px; font-weight: 700; color: ${color}; margin-bottom: 8px;">
-              ${loc.name} (${loc.district})
-            </div>
-            <div style="background: rgba(255,255,255,0.06); padding: 8px; border-radius: 8px; font-size: 12px; margin-bottom: 8px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="color: #94a3b8;">Bán kính ảnh hưởng:</span>
-                <span style="font-weight: 700; color: #38bdf8; font-family: 'Space Grotesk';">~${radius} m</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #94a3b8;">Mực nước đỉnh triều:</span>
-                <span style="font-weight: 800; color: ${color}; font-family: 'Space Grotesk';">↑ ${loc.water_level_m} m</span>
-              </div>
-            </div>
-            <div style="font-size: 11px; color: #fca5a5; background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2); padding: 6px; border-radius: 6px;">
-              ⚠️ Cảnh báo: Vùng trũng ngập sâu, các phương tiện gầm thấp không nên lưu thông.
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #94a3b8;">Bán kính ảnh hưởng:</span>
+              <span style="font-weight: 700; color: #38bdf8; font-family: 'Space Grotesk';">~${radius} m</span>
             </div>
           </div>
-        `;
+          <div style="font-size: 11px; color: #fca5a5; background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.2); padding: 6px; border-radius: 6px;">
+            ⚠️ Luồng nước dâng cao, khuyến cáo phương tiện tránh lưu thông qua khu vực.
+          </div>
+        </div>
+      `;
 
-        outerCircle.bindPopup(zonePopup);
-        innerCircle.bindPopup(zonePopup);
+      outerWave.bindPopup(popupContent);
+      midWave.bindPopup(popupContent);
+      coreInundation.bindPopup(popupContent);
 
-        floodZonesLayerRef.current.addLayer(outerCircle);
-        floodZonesLayerRef.current.addLayer(innerCircle);
-      });
-    }
+      floodZonesLayerRef.current.addLayer(outerWave);
+      floodZonesLayerRef.current.addLayer(midWave);
+      floodZonesLayerRef.current.addLayer(coreInundation);
 
-    // 2. Vùng ngập cục bộ phát hiện bởi các xe IoT (khi nước >= 25cm)
-    if (devices) {
-      devices.forEach(device => {
-        if (device.water_level_cm >= 25.0) {
-          const isCrit = device.status === 'CRITICAL';
-          const color = isCrit ? '#f43f5e' : '#f59e0b';
-          const radius = isCrit ? 450 : 280;
+      // 2. Các luồng nước chảy động (Directional Water Flow Streamlines)
+      if (showStreamlines) {
+        // Sinh 3 nhánh luồng nước đổ về tâm ngập
+        const angles = [0.4, 2.2, 4.3];
+        angles.forEach(ang => {
+          const streamLength = radius * 0.000014;
+          const startLat = loc.latitude + Math.sin(ang) * streamLength;
+          const startLon = loc.longitude + Math.cos(ang) * streamLength;
+          const midLat = loc.latitude + Math.sin(ang + 0.3) * (streamLength * 0.5);
+          const midLon = loc.longitude + Math.cos(ang + 0.3) * (streamLength * 0.5);
 
-          const vehicleZone = L.circle([device.latitude, device.longitude], {
-            radius: radius,
+          const streamline = L.polyline([
+            [startLat, startLon],
+            [midLat, midLon],
+            [loc.latitude, loc.longitude]
+          ], {
             color: color,
-            fillColor: color,
-            fillOpacity: isCrit ? 0.22 : 0.15,
-            weight: 1.2,
-            dashArray: '4, 4',
-            className: 'flood-pulse-zone'
+            weight: 3,
+            opacity: 0.85,
+            className: 'flow-streamline'
           });
 
-          vehicleZone.bindPopup(`
-            <div style="padding: 8px; font-family: 'Plus Jakarta Sans', sans-serif;">
-              <div style="font-weight: 700; font-size: 13px; color: ${color}; margin-bottom: 4px;">
-                ⚠️ Vùng trũng ngập cục bộ
-              </div>
-              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">
-                Phát hiện bởi: <strong style="color: #f1f5f9;">${device.name}</strong>
-              </div>
-              <div style="font-size: 12px; color: #cbd5e1;">
-                Mực nước đo được: <strong style="color: ${color}; font-family: 'Space Grotesk';">${device.water_level_cm} cm</strong>
-              </div>
-              <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                Bán kính ảnh hưởng: ~${radius}m
-              </div>
+          streamlinesLayerRef.current.addLayer(streamline);
+        });
+      }
+    });
+  }, [showFloodZones, showStreamlines, severeLocations]);
+
+  // Cập nhật Cột Thủy chí đo nước kỹ thuật số (Digital Water Depth Gauge Beacons) tại 10 điểm ngập
+  useEffect(() => {
+    if (!mapRef.current || !severeLayerRef.current || !severeLocations) return;
+
+    severeLayerRef.current.clearLayers();
+
+    severeLocations.forEach(loc => {
+      const isCrit = loc.severity === 'CRITICAL';
+      const color = isCrit ? '#f43f5e' : (loc.severity === 'WARNING' ? '#f59e0b' : '#38bdf8');
+
+      const gaugeHtml = `
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <!-- Sóng âm tỏa ra từ cột đo -->
+          <div style="position: absolute; width: 44px; height: 44px; border-radius: 50%; background: ${color}; opacity: 0.25; animation: radar-ping 1.8s infinite;"></div>
+          <div style="position: absolute; width: 26px; height: 26px; border-radius: 50%; background: ${color}; opacity: 0.45;"></div>
+          
+          <!-- Thước đo thủy chí hiển thị trực quan -->
+          <div style="
+            position: absolute; 
+            left: 18px; 
+            top: -16px; 
+            white-space: nowrap; 
+            background: rgba(14, 17, 23, 0.92); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid ${color}66; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 10px ${color}44;
+            border-radius: 8px; 
+            padding: 4px 10px; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            z-index: 10;
+          ">
+            <span style="font-size: 13px;">🌊</span>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">${loc.district}</span>
+              <span style="font-size: 12px; font-weight: 800; color: ${color}; font-family: 'Space Grotesk';">
+                ↑ ${loc.water_level_m}m
+              </span>
             </div>
-          `);
+          </div>
+          
+          <!-- Chấm tâm cột thủy chí -->
+          <div style="width: 14px; height: 14px; border-radius: 50%; background: ${color}; border: 2px solid #ffffff; box-shadow: 0 0 15px ${color}; z-index: 5;"></div>
+        </div>
+      `;
 
-          floodZonesLayerRef.current.addLayer(vehicleZone);
-        }
+      const gaugeIcon = L.divIcon({
+        html: gaugeHtml,
+        className: 'custom-gauge-beacon',
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
       });
-    }
-  }, [showFloodZones, severeLocations, devices]);
 
-  // Cập nhật markers của các xe IoT khi có telemetry mới
+      const marker = L.marker([loc.latitude, loc.longitude], { icon: gaugeIcon });
+      severeLayerRef.current.addLayer(marker);
+    });
+  }, [severeLocations]);
+
+  // Cập nhật Markers 50 Xe IoT (Tản đều, KHÔNG vẽ vòng tròn con đè lên nhau nữa)
   useEffect(() => {
     if (!mapRef.current || !markersLayerRef.current || !devices) return;
 
@@ -162,30 +222,31 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
       let label = 'An toàn';
       if (device.status === 'CRITICAL') {
         color = '#f43f5e';
-        label = 'Ngập nghiêm trọng';
+        label = 'Ngập sâu';
       } else if (device.status === 'ALERT') {
         color = '#f59e0b';
         label = 'Cảnh báo ngập';
       }
 
+      // Marker gọn gàng, có radar quét nhẹ, không gây nùi bản đồ
       const iconHtml = `
         <div class="radar-marker" style="color: ${color}">
-          <div class="radar-wave"></div>
-          <div class="radar-core" style="background-color: ${color}"></div>
+          <div class="radar-wave" style="animation-duration: 2.4s;"></div>
+          <div class="radar-core" style="background-color: ${color}; width: 10px; height: 10px;"></div>
         </div>
       `;
 
       const customIcon = L.divIcon({
         html: iconHtml,
         className: 'custom-radar-icon',
-        iconSize: [22, 22],
-        iconAnchor: [11, 11]
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
       });
 
       const popupContent = `
         <div style="padding: 10px; font-family: 'Plus Jakarta Sans', sans-serif;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-weight: 700; font-size: 14px; color: #f8fafc;">${device.name}</span>
+            <span style="font-weight: 700; font-size: 13px; color: #f8fafc;">${device.name}</span>
             <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: ${color}22; color: ${color}; border: 1px solid ${color}44;">
               ${device.status}
             </span>
@@ -195,7 +256,7 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
           </div>
           <div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; margin-bottom: 8px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
-              <span style="color: #94a3b8;">Mực nước ngập:</span>
+              <span style="color: #94a3b8;">Mực nước đo được:</span>
               <span style="font-weight: 800; font-family: 'Space Grotesk'; color: ${color};">${device.water_level_cm} cm</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px;">
@@ -219,39 +280,6 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
     });
   }, [devices]);
 
-  // Cập nhật các điểm ngập cảnh báo lớn (Severe locations beacons)
-  useEffect(() => {
-    if (!mapRef.current || !severeLayerRef.current || !severeLocations) return;
-
-    severeLayerRef.current.clearLayers();
-
-    severeLocations.forEach(loc => {
-      const isCrit = loc.severity === 'CRITICAL';
-      const color = isCrit ? '#f43f5e' : '#f59e0b';
-
-      const beaconHtml = `
-        <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-          <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: ${color}; opacity: 0.25; animation: radar-ping 1.8s infinite;"></div>
-          <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: ${color}; opacity: 0.4;"></div>
-          <div style="width: 14px; height: 14px; border-radius: 50%; background: ${color}; border: 2px solid #ffffff; box-shadow: 0 0 15px ${color}; z-index: 2;"></div>
-          <div style="position: absolute; left: 24px; top: -10px; white-space: nowrap; background: rgba(14, 17, 23, 0.9); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; color: #ffffff; z-index: 3;">
-            ${loc.district} <span style="color: ${color}; font-family: 'Space Grotesk';">↑ ${loc.water_level_m}m</span>
-          </div>
-        </div>
-      `;
-
-      const beaconIcon = L.divIcon({
-        html: beaconHtml,
-        className: 'custom-severe-beacon',
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
-      });
-
-      const marker = L.marker([loc.latitude, loc.longitude], { icon: beaconIcon });
-      severeLayerRef.current.addLayer(marker);
-    });
-  }, [severeLocations]);
-
   // Fly to khi user click vào một điểm ngập ở Sidebar
   useEffect(() => {
     if (!mapRef.current || !selectedLocation) return;
@@ -262,11 +290,11 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
 
   const handleZoomIn = () => mapRef.current?.zoomIn();
   const handleZoomOut = () => mapRef.current?.zoomOut();
-  const handleRecenter = () => mapRef.current?.flyTo([10.7769, 106.7009], 12);
+  const handleRecenter = () => mapRef.current?.flyTo([10.7850, 106.7050], 12);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {/* Khung bản đồ */}
+      {/* Khung bản đồ Leaflet */}
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
 
       {/* Floating Map Controls trên góc phải */}
@@ -345,14 +373,15 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
           <Minus size={18} />
         </button>
 
+        {/* Nút bật tắt Vùng ngập */}
         <button 
           onClick={() => setShowFloodZones(!showFloodZones)}
-          title={showFloodZones ? "Tắt vùng ngập diện rộng" : "Bật vùng ngập diện rộng"}
+          title={showFloodZones ? "Tắt vùng ngập lan tỏa" : "Bật vùng ngập lan tỏa"}
           style={{
             width: '40px',
             height: '40px',
             borderRadius: '12px',
-            background: showFloodZones ? 'rgba(2, 132, 199, 0.4)' : 'rgba(14, 17, 23, 0.85)',
+            background: showFloodZones ? 'rgba(2, 132, 199, 0.45)' : 'rgba(14, 17, 23, 0.85)',
             backdropFilter: 'blur(12px)',
             border: showFloodZones ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.1)',
             display: 'flex',
@@ -360,67 +389,70 @@ export default function FloodMap({ devices, severeLocations, selectedLocation })
             justifyContent: 'center',
             color: showFloodZones ? '#38bdf8' : '#f8fafc',
             cursor: 'pointer',
-            boxShadow: showFloodZones ? '0 0 15px rgba(56, 189, 248, 0.35)' : '0 8px 20px rgba(0,0,0,0.4)',
+            boxShadow: showFloodZones ? '0 0 15px rgba(56, 189, 248, 0.4)' : '0 8px 20px rgba(0,0,0,0.4)',
             transition: 'all 0.2s'
           }}
         >
           <Layers size={18} />
         </button>
+
+        {/* Nút bật tắt Luồng nước chảy */}
+        <button 
+          onClick={() => setShowStreamlines(!showStreamlines)}
+          title={showStreamlines ? "Tắt mô phỏng luồng nước" : "Bật mô phỏng luồng nước"}
+          style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px',
+            background: showStreamlines ? 'rgba(16, 185, 129, 0.35)' : 'rgba(14, 17, 23, 0.85)',
+            backdropFilter: 'blur(12px)',
+            border: showStreamlines ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: showStreamlines ? '#10b981' : '#f8fafc',
+            cursor: 'pointer',
+            boxShadow: showStreamlines ? '0 0 15px rgba(16, 185, 129, 0.4)' : '0 8px 20px rgba(0,0,0,0.4)',
+            transition: 'all 0.2s'
+          }}
+        >
+          <Waves size={18} />
+        </button>
       </div>
 
-      {/* Floating Legend / Status Badge for Flood Zones */}
-      {showFloodZones && (
-        <div style={{
-          position: 'absolute',
-          bottom: '24px',
-          left: '24px',
-          zIndex: 1000,
-          background: 'rgba(14, 17, 23, 0.88)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '12px',
-          padding: '10px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          pointerEvents: 'none'
-        }}>
-          <div style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            background: '#f43f5e',
-            boxShadow: '0 0 10px #f43f5e',
-            animation: 'radar-ping 2s infinite'
-          }} />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.5px' }}>
-              VÙNG NGẬP DIỆN RỘNG (BUFFER ZONES)
-            </span>
-            <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-              Bán kính lan tỏa 300m – 1200m • Tự động quét theo độ sâu
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Watermark trung tâm TP.HCM mờ ảo trên map giống Mockup */}
+      {/* Floating Legend / Status Badge for Water Currents */}
       <div style={{
         position: 'absolute',
-        top: '40%',
-        left: '52%',
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-        zIndex: 500,
-        fontSize: '20px',
-        fontWeight: 800,
-        letterSpacing: '3px',
-        color: 'rgba(255, 255, 255, 0.25)',
-        textTransform: 'uppercase',
-        fontFamily: 'Space Grotesk'
+        bottom: '24px',
+        left: '24px',
+        zIndex: 1000,
+        background: 'rgba(14, 17, 23, 0.90)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255, 255, 255, 0.12)',
+        borderRadius: '14px',
+        padding: '12px 18px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '14px',
+        boxShadow: '0 12px 35px rgba(0,0,0,0.6)',
+        pointerEvents: 'none'
       }}>
-        HCMC
+        <div style={{
+          width: '12px',
+          height: '12px',
+          borderRadius: '50%',
+          background: '#06b6d4',
+          boxShadow: '0 0 12px #06b6d4',
+          animation: 'radar-ping 2s infinite'
+        }} />
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontSize: '11px', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.6px' }}>
+            HỆ THỐNG GIÁM SÁT THỦY VĂN & LUỒNG NƯỚC THỜI GIAN THỰC
+          </span>
+          <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+            10 Điểm nóng • Sóng nước dâng & Luồng chảy động • 50 Cảm biến IoT
+          </span>
+        </div>
       </div>
     </div>
   );

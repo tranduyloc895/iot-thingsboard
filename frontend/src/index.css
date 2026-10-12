@@ -137,6 +137,38 @@ body, html {
   }
 }
 
+/* Real-time Water Flow Streamlines & Ripples */
+.flow-streamline {
+  stroke-dasharray: 8, 6;
+  animation: flow-stream-dash 1.4s linear infinite;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+@keyframes flow-stream-dash {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+.water-ripple-wave {
+  animation: water-ripple-anim 2.5s cubic-bezier(0.1, 0.45, 0.1, 1) infinite;
+}
+
+@keyframes water-ripple-anim {
+  0% {
+    stroke-opacity: 0.9;
+    fill-opacity: 0.28;
+  }
+  50% {
+    stroke-opacity: 0.45;
+    fill-opacity: 0.12;
+  }
+  100% {
+    stroke-opacity: 0;
+    fill-opacity: 0;
+  }
+}
+
 /* Leaflet Dark Customizations */
 .leaflet-container {
   width: 100% !important;

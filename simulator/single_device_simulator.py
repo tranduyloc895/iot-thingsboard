@@ -129,9 +129,9 @@ DEVICE_NAME = os.getenv("DEVICE_NAME", f"HCM_Vehicle_{CONTAINER_ID}_{random.rand
 seed_val = int(hashlib.md5(DEVICE_NAME.encode()).hexdigest(), 16)
 assigned_hotspot = HOTSPOTS[seed_val % len(HOTSPOTS)]
 
-# Khởi tạo tọa độ tuần tra xung quanh điểm ngập được gán (bán kính ~200 - 500m)
-lat = assigned_hotspot["lat"] + random.uniform(-0.003, 0.003)
-lon = assigned_hotspot["lon"] + random.uniform(-0.003, 0.003)
+# Khởi tạo tọa độ tuần tra tản đều quanh điểm ngập (bán kính thực tế ~600m - 1.2km)
+lat = assigned_hotspot["lat"] + random.uniform(-0.008, 0.008)
+lon = assigned_hotspot["lon"] + random.uniform(-0.008, 0.008)
 
 
 def provision_device():
