@@ -12,7 +12,7 @@ backend:
   enabled: true
   replicaCount: 2
   image:
-    repository: hcm-flood-backend
+    repository: ghcr.io/tranduyloc895/hcm-flood-backend
     pullPolicy: IfNotPresent
     tag: "latest"
   service:
@@ -34,7 +34,7 @@ frontend:
   enabled: true
   replicaCount: 2
   image:
-    repository: hcm-flood-frontend
+    repository: ghcr.io/tranduyloc895/hcm-flood-frontend
     pullPolicy: IfNotPresent
     tag: "latest"
   service:
