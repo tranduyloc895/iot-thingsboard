@@ -136,7 +136,10 @@ lon = assigned_hotspot["lon"] + random.uniform(-0.003, 0.003)
 
 def provision_device():
     provision_client = mqtt.Client()
+    # Theo chuẩn ThingsBoard: Username kết nối BẮT BUỘC là "provision"
+    provision_client.username_pw_set("provision")
     token = None
+    done = False
 
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
@@ -147,16 +150,22 @@ def provision_device():
                 "provisionDeviceSecret": PROVISION_SECRET
             }
             client.publish("/provision/request", json.dumps(payload))
+        else:
+            print(f"[{DEVICE_NAME}] Kết nối MQTT Provisioning bị từ chối, rc={rc}")
 
     def on_message(client, userdata, msg):
-        nonlocal token
+        nonlocal token, done
         if msg.topic == "/provision/response":
-            response = json.loads(msg.payload.decode())
-            if response.get("status") == "SUCCESS":
-                token = response.get("credentialsValue")
-                print(f"[{DEVICE_NAME}] Đăng ký thành công! Token: {token}")
-            else:
-                print(f"[{DEVICE_NAME}] Lỗi đăng ký: {response.get('errorMsg')}")
+            try:
+                response = json.loads(msg.payload.decode())
+                if response.get("status") == "SUCCESS":
+                    token = response.get("credentialsValue")
+                    print(f"[{DEVICE_NAME}] Đăng ký thành công! Token: {token}")
+                else:
+                    print(f"[{DEVICE_NAME}] Lỗi đăng ký từ ThingsBoard: {response.get('errorMsg')}")
+            except Exception as e:
+                print(f"[{DEVICE_NAME}] Lỗi giải mã response: {e}")
+            done = True
             client.disconnect()
 
     provision_client.on_connect = on_connect
@@ -165,7 +174,14 @@ def provision_device():
     print(f"[{DEVICE_NAME}] Đang gửi yêu cầu Auto-Provisioning tới {THINGSBOARD_HOST}:{PORT}...")
     try:
         provision_client.connect(THINGSBOARD_HOST, PORT, 60)
-        provision_client.loop_forever()
+        provision_client.loop_start()
+        # Chờ tối đa 15 giây để nhận token
+        wait_seconds = 0
+        while not done and wait_seconds < 15:
+            time.sleep(1)
+            wait_seconds += 1
+        provision_client.loop_stop()
+        provision_client.disconnect()
     except Exception as e:
         print(f"[{DEVICE_NAME}] Không thể kết nối tới ThingsBoard: {e}")
 
