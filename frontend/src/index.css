@@ -113,6 +113,30 @@ body, html {
   color: var(--accent-critical);
 }
 
+/* Flood Buffer Zone Animated Ripples */
+.flood-pulse-zone {
+  animation: flood-pulse-wave 3s ease-in-out infinite;
+}
+
+.flood-core-zone {
+  filter: drop-shadow(0 0 8px currentColor);
+}
+
+@keyframes flood-pulse-wave {
+  0% {
+    stroke-opacity: 0.9;
+    fill-opacity: 0.25;
+  }
+  50% {
+    stroke-opacity: 0.35;
+    fill-opacity: 0.08;
+  }
+  100% {
+    stroke-opacity: 0.9;
+    fill-opacity: 0.25;
+  }
+}
+
 /* Leaflet Dark Customizations */
 .leaflet-container {
   width: 100% !important;
