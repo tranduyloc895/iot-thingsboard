@@ -12,6 +12,7 @@ THINGSBOARD_HOST = os.getenv("THINGSBOARD_HOST", "10.0.0.225")
 PORT = int(os.getenv("PORT", "1883"))
 PROVISION_KEY = os.getenv("PROVISION_KEY", "")
 PROVISION_SECRET = os.getenv("PROVISION_SECRET", "")
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN", "")
 # Lấy hostname của container để đảm bảo 20 container không bị trùng tên thiết bị
 CONTAINER_ID = socket.gethostname()[-6:] if len(socket.gethostname()) >= 6 else socket.gethostname()
 DEVICE_NAME = os.getenv("DEVICE_NAME", f"HCM_Vehicle_{CONTAINER_ID}_{random.randint(100,999)}")
@@ -96,13 +97,17 @@ def run_simulation(token):
         time.sleep(random.uniform(3, 5))
 
 if __name__ == "__main__":
-    if not PROVISION_KEY or not PROVISION_SECRET:
-        print("LỖI: Chưa cung cấp PROVISION_KEY và PROVISION_SECRET")
+    token = None
+    if ACCESS_TOKEN:
+        print(f"[{DEVICE_NAME}] Sử dụng trực tiếp ACCESS_TOKEN đã cấu hình.")
+        token = ACCESS_TOKEN
+    elif PROVISION_KEY and PROVISION_SECRET:
+        # 1. Đăng ký qua Auto-Provisioning để lấy token
+        token = provision_device()
+    else:
+        print("LỖI: Vui lòng cung cấp ACCESS_TOKEN hoặc cả bộ (PROVISION_KEY & PROVISION_SECRET)")
         exit(1)
         
-    # 1. Đăng ký lấy token
-    token = provision_device()
-    
     if token:
         # 2. Bắt đầu gửi data
         run_simulation(token)

@@ -8,9 +8,12 @@ services:
       # SỐ LƯỢNG XE BẠN MUỐN ĐẺ RA (Ví dụ: 20)
       replicas: 20
     environment:
-      # KHAI BÁO IP PUBLIC CỦA MQTT LOADBALANCER K8S
+      # KHAI BÁO IP PUBLIC HOẶC DOMAIN CỦA MQTT LOADBALANCER / FIREWALL
       - THINGSBOARD_HOST=10.0.0.225
+      # Port MQTT (1883 hoặc port NodePort 31791 nếu trỏ thẳng NodePort)
       - PORT=1883
-      # LẤY KEY VÀ SECRET TỪ THINGSBOARD UI DÁN VÀO ĐÂY
+      # Cách 1: Auto-Provisioning (Khuyên dùng khi scale 20 xe) - Lấy từ Device Profile trong ThingsBoard
       - PROVISION_KEY=DIEN_KEY_VAO_DAY
       - PROVISION_SECRET=DIEN_SECRET_VAO_DAY
+      # Cách 2: Dùng trực tiếp Access Token (Nếu test đơn lẻ 1 xe)
+      # - ACCESS_TOKEN=YOUR_DEVICE_TOKEN
