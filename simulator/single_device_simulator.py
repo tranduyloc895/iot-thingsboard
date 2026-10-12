@@ -22,7 +22,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.82346,
         "lon": 106.62943,
-        "base_water": 20.8
+        "latitude": 10.82346,
+        "longitude": 106.62943,
+        "base_water": 20.8,
+        "water_level_cm": 20.8,
+        "status": "ALERT"
     },
     {
         "node_num": 2,
@@ -36,7 +40,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.82712,
         "lon": 106.6315,
-        "base_water": 39.0
+        "latitude": 10.82712,
+        "longitude": 106.6315,
+        "base_water": 39.0,
+        "water_level_cm": 39.0,
+        "status": "WARNING"
     },
     {
         "node_num": 3,
@@ -50,7 +58,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.83283,
         "lon": 106.63422,
-        "base_water": 52.0
+        "latitude": 10.83283,
+        "longitude": 106.63422,
+        "base_water": 52.0,
+        "water_level_cm": 52.0,
+        "status": "CRITICAL"
     },
     {
         "node_num": 4,
@@ -64,7 +76,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.83905,
         "lon": 106.63708,
-        "base_water": 41.6
+        "latitude": 10.83905,
+        "longitude": 106.63708,
+        "base_water": 41.6,
+        "water_level_cm": 41.6,
+        "status": "WARNING"
     },
     {
         "node_num": 5,
@@ -78,7 +94,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.84429,
         "lon": 106.64011,
-        "base_water": 23.4
+        "latitude": 10.84429,
+        "longitude": 106.64011,
+        "base_water": 23.4,
+        "water_level_cm": 23.4,
+        "status": "ALERT"
     },
     {
         "node_num": 6,
@@ -92,7 +112,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.82783,
         "lon": 106.62674,
-        "base_water": 20.0
+        "latitude": 10.82783,
+        "longitude": 106.62674,
+        "base_water": 20.0,
+        "water_level_cm": 20.0,
+        "status": "ALERT"
     },
     {
         "node_num": 7,
@@ -106,7 +130,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.83544,
         "lon": 106.62882,
-        "base_water": 37.5
+        "latitude": 10.83544,
+        "longitude": 106.62882,
+        "base_water": 37.5,
+        "water_level_cm": 37.5,
+        "status": "WARNING"
     },
     {
         "node_num": 8,
@@ -120,7 +148,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.84278,
         "lon": 106.63091,
-        "base_water": 50.0
+        "latitude": 10.84278,
+        "longitude": 106.63091,
+        "base_water": 50.0,
+        "water_level_cm": 50.0,
+        "status": "CRITICAL"
     },
     {
         "node_num": 9,
@@ -134,7 +166,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.84979,
         "lon": 106.63654,
-        "base_water": 40.0
+        "latitude": 10.84979,
+        "longitude": 106.63654,
+        "base_water": 40.0,
+        "water_level_cm": 40.0,
+        "status": "WARNING"
     },
     {
         "node_num": 10,
@@ -148,7 +184,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.85647,
         "lon": 106.63941,
-        "base_water": 22.5
+        "latitude": 10.85647,
+        "longitude": 106.63941,
+        "base_water": 22.5,
+        "water_level_cm": 22.5,
+        "status": "ALERT"
     },
     {
         "node_num": 11,
@@ -162,7 +202,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.73791,
         "lon": 106.73034,
-        "base_water": 22.4
+        "latitude": 10.73791,
+        "longitude": 106.73034,
+        "base_water": 22.4,
+        "water_level_cm": 22.4,
+        "status": "ALERT"
     },
     {
         "node_num": 12,
@@ -176,7 +220,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.74141,
         "lon": 106.7298,
-        "base_water": 42.0
+        "latitude": 10.74141,
+        "longitude": 106.7298,
+        "base_water": 42.0,
+        "water_level_cm": 42.0,
+        "status": "WARNING"
     },
     {
         "node_num": 13,
@@ -190,7 +238,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.74375,
         "lon": 106.72954,
-        "base_water": 56.0
+        "latitude": 10.74375,
+        "longitude": 106.72954,
+        "base_water": 56.0,
+        "water_level_cm": 56.0,
+        "status": "CRITICAL"
     },
     {
         "node_num": 14,
@@ -204,7 +256,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.74832,
         "lon": 106.72887,
-        "base_water": 44.8
+        "latitude": 10.74832,
+        "longitude": 106.72887,
+        "base_water": 44.8,
+        "water_level_cm": 44.8,
+        "status": "WARNING"
     },
     {
         "node_num": 15,
@@ -218,7 +274,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.75265,
         "lon": 106.72855,
-        "base_water": 25.2
+        "latitude": 10.75265,
+        "longitude": 106.72855,
+        "base_water": 25.2,
+        "water_level_cm": 25.2,
+        "status": "ALERT"
     },
     {
         "node_num": 16,
@@ -232,7 +292,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.75101,
         "lon": 106.69107,
-        "base_water": 21.2
+        "latitude": 10.75101,
+        "longitude": 106.69107,
+        "base_water": 21.2,
+        "water_level_cm": 21.2,
+        "status": "ALERT"
     },
     {
         "node_num": 17,
@@ -246,7 +310,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.75172,
         "lon": 106.69849,
-        "base_water": 39.8
+        "latitude": 10.75172,
+        "longitude": 106.69849,
+        "base_water": 39.8,
+        "water_level_cm": 39.8,
+        "status": "WARNING"
     },
     {
         "node_num": 18,
@@ -260,7 +328,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.7518,
         "lon": 106.70669,
-        "base_water": 53.0
+        "latitude": 10.7518,
+        "longitude": 106.70669,
+        "base_water": 53.0,
+        "water_level_cm": 53.0,
+        "status": "CRITICAL"
     },
     {
         "node_num": 19,
@@ -274,7 +346,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.75189,
         "lon": 106.71725,
-        "base_water": 42.4
+        "latitude": 10.75189,
+        "longitude": 106.71725,
+        "base_water": 42.4,
+        "water_level_cm": 42.4,
+        "status": "WARNING"
     },
     {
         "node_num": 20,
@@ -288,7 +364,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.75749,
         "lon": 106.72229,
-        "base_water": 23.9
+        "latitude": 10.75749,
+        "longitude": 106.72229,
+        "base_water": 23.9,
+        "water_level_cm": 23.9,
+        "status": "ALERT"
     },
     {
         "node_num": 21,
@@ -302,7 +382,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.79802,
         "lon": 106.7245,
-        "base_water": 18.4
+        "latitude": 10.79802,
+        "longitude": 106.7245,
+        "base_water": 18.4,
+        "water_level_cm": 18.4,
+        "status": "SAFE"
     },
     {
         "node_num": 22,
@@ -316,7 +400,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.78905,
         "lon": 106.71455,
-        "base_water": 34.5
+        "latitude": 10.78905,
+        "longitude": 106.71455,
+        "base_water": 34.5,
+        "water_level_cm": 34.5,
+        "status": "ALERT"
     },
     {
         "node_num": 23,
@@ -330,7 +418,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.78932,
         "lon": 106.71481,
-        "base_water": 46.0
+        "latitude": 10.78932,
+        "longitude": 106.71481,
+        "base_water": 46.0,
+        "water_level_cm": 46.0,
+        "status": "WARNING"
     },
     {
         "node_num": 24,
@@ -344,7 +436,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.78691,
         "lon": 106.70905,
-        "base_water": 36.8
+        "latitude": 10.78691,
+        "longitude": 106.70905,
+        "base_water": 36.8,
+        "water_level_cm": 36.8,
+        "status": "WARNING"
     },
     {
         "node_num": 25,
@@ -358,7 +454,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.7868,
         "lon": 106.70936,
-        "base_water": 20.7
+        "latitude": 10.7868,
+        "longitude": 106.70936,
+        "base_water": 20.7,
+        "water_level_cm": 20.7,
+        "status": "ALERT"
     },
     {
         "node_num": 26,
@@ -372,7 +472,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.80993,
         "lon": 106.71262,
-        "base_water": 17.6
+        "latitude": 10.80993,
+        "longitude": 106.71262,
+        "base_water": 17.6,
+        "water_level_cm": 17.6,
+        "status": "SAFE"
     },
     {
         "node_num": 27,
@@ -386,7 +490,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.80781,
         "lon": 106.7159,
-        "base_water": 33.0
+        "latitude": 10.80781,
+        "longitude": 106.7159,
+        "base_water": 33.0,
+        "water_level_cm": 33.0,
+        "status": "ALERT"
     },
     {
         "node_num": 28,
@@ -400,7 +508,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.8061,
         "lon": 106.7204,
-        "base_water": 44.0
+        "latitude": 10.8061,
+        "longitude": 106.7204,
+        "base_water": 44.0,
+        "water_level_cm": 44.0,
+        "status": "WARNING"
     },
     {
         "node_num": 29,
@@ -414,7 +526,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.80209,
         "lon": 106.7226,
-        "base_water": 35.2
+        "latitude": 10.80209,
+        "longitude": 106.7226,
+        "base_water": 35.2,
+        "water_level_cm": 35.2,
+        "status": "WARNING"
     },
     {
         "node_num": 30,
@@ -428,7 +544,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.79914,
         "lon": 106.72392,
-        "base_water": 19.8
+        "latitude": 10.79914,
+        "longitude": 106.72392,
+        "base_water": 19.8,
+        "water_level_cm": 19.8,
+        "status": "SAFE"
     },
     {
         "node_num": 31,
@@ -442,7 +562,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.8015,
         "lon": 106.738,
-        "base_water": 20.0
+        "latitude": 10.8015,
+        "longitude": 106.738,
+        "base_water": 20.0,
+        "water_level_cm": 20.0,
+        "status": "ALERT"
     },
     {
         "node_num": 32,
@@ -456,7 +580,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.803,
         "lon": 106.7345,
-        "base_water": 38.0
+        "latitude": 10.803,
+        "longitude": 106.7345,
+        "base_water": 38.0,
+        "water_level_cm": 38.0,
+        "status": "WARNING"
     },
     {
         "node_num": 33,
@@ -470,7 +598,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.8035,
         "lon": 106.7321,
-        "base_water": 54.0
+        "latitude": 10.8035,
+        "longitude": 106.7321,
+        "base_water": 54.0,
+        "water_level_cm": 54.0,
+        "status": "CRITICAL"
     },
     {
         "node_num": 34,
@@ -484,7 +616,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.8075,
         "lon": 106.73,
-        "base_water": 45.0
+        "latitude": 10.8075,
+        "longitude": 106.73,
+        "base_water": 45.0,
+        "water_level_cm": 45.0,
+        "status": "WARNING"
     },
     {
         "node_num": 35,
@@ -498,7 +634,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.812,
         "lon": 106.728,
-        "base_water": 32.0
+        "latitude": 10.812,
+        "longitude": 106.728,
+        "base_water": 32.0,
+        "water_level_cm": 32.0,
+        "status": "ALERT"
     },
     {
         "node_num": 36,
@@ -512,7 +652,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.8495,
         "lon": 106.7625,
-        "base_water": 26.0
+        "latitude": 10.8495,
+        "longitude": 106.7625,
+        "base_water": 26.0,
+        "water_level_cm": 26.0,
+        "status": "ALERT"
     },
     {
         "node_num": 37,
@@ -526,7 +670,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.851,
         "lon": 106.76,
-        "base_water": 48.0
+        "latitude": 10.851,
+        "longitude": 106.76,
+        "base_water": 48.0,
+        "water_level_cm": 48.0,
+        "status": "WARNING"
     },
     {
         "node_num": 38,
@@ -540,7 +688,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.8525,
         "lon": 106.7582,
-        "base_water": 60.0
+        "latitude": 10.8525,
+        "longitude": 106.7582,
+        "base_water": 60.0,
+        "water_level_cm": 60.0,
+        "status": "CRITICAL"
     },
     {
         "node_num": 39,
@@ -554,7 +706,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.8535,
         "lon": 106.7565,
-        "base_water": 42.0
+        "latitude": 10.8535,
+        "longitude": 106.7565,
+        "base_water": 42.0,
+        "water_level_cm": 42.0,
+        "status": "WARNING"
     },
     {
         "node_num": 40,
@@ -568,7 +724,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.855,
         "lon": 106.7535,
-        "base_water": 22.0
+        "latitude": 10.855,
+        "longitude": 106.7535,
+        "base_water": 22.0,
+        "water_level_cm": 22.0,
+        "status": "ALERT"
     },
     {
         "node_num": 41,
@@ -582,7 +742,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.844,
         "lon": 106.679,
-        "base_water": 20.0
+        "latitude": 10.844,
+        "longitude": 106.679,
+        "base_water": 20.0,
+        "water_level_cm": 20.0,
+        "status": "ALERT"
     },
     {
         "node_num": 42,
@@ -596,7 +760,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.84,
         "lon": 106.675,
-        "base_water": 36.0
+        "latitude": 10.84,
+        "longitude": 106.675,
+        "base_water": 36.0,
+        "water_level_cm": 36.0,
+        "status": "WARNING"
     },
     {
         "node_num": 43,
@@ -610,7 +778,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.835,
         "lon": 106.672,
-        "base_water": 52.0
+        "latitude": 10.835,
+        "longitude": 106.672,
+        "base_water": 52.0,
+        "water_level_cm": 52.0,
+        "status": "CRITICAL"
     },
     {
         "node_num": 44,
@@ -624,7 +796,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.8385,
         "lon": 106.666,
-        "base_water": 42.0
+        "latitude": 10.8385,
+        "longitude": 106.666,
+        "base_water": 42.0,
+        "water_level_cm": 42.0,
+        "status": "WARNING"
     },
     {
         "node_num": 45,
@@ -638,7 +814,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.841,
         "lon": 106.661,
-        "base_water": 24.0
+        "latitude": 10.841,
+        "longitude": 106.661,
+        "base_water": 24.0,
+        "water_level_cm": 24.0,
+        "status": "ALERT"
     },
     {
         "node_num": 46,
@@ -652,7 +832,11 @@ ALL_50_STATIONS = [
         "segment_idx": 0,
         "lat": 10.71,
         "lon": 106.628,
-        "base_water": 28.0
+        "latitude": 10.71,
+        "longitude": 106.628,
+        "base_water": 28.0,
+        "water_level_cm": 28.0,
+        "status": "ALERT"
     },
     {
         "node_num": 47,
@@ -666,7 +850,11 @@ ALL_50_STATIONS = [
         "segment_idx": 1,
         "lat": 10.714,
         "lon": 106.623,
-        "base_water": 44.0
+        "latitude": 10.714,
+        "longitude": 106.623,
+        "base_water": 44.0,
+        "water_level_cm": 44.0,
+        "status": "WARNING"
     },
     {
         "node_num": 48,
@@ -680,7 +868,11 @@ ALL_50_STATIONS = [
         "segment_idx": 2,
         "lat": 10.718,
         "lon": 106.6185,
-        "base_water": 55.0
+        "latitude": 10.718,
+        "longitude": 106.6185,
+        "base_water": 55.0,
+        "water_level_cm": 55.0,
+        "status": "CRITICAL"
     },
     {
         "node_num": 49,
@@ -694,7 +886,11 @@ ALL_50_STATIONS = [
         "segment_idx": 3,
         "lat": 10.723,
         "lon": 106.615,
-        "base_water": 40.0
+        "latitude": 10.723,
+        "longitude": 106.615,
+        "base_water": 40.0,
+        "water_level_cm": 40.0,
+        "status": "WARNING"
     },
     {
         "node_num": 50,
@@ -708,7 +904,11 @@ ALL_50_STATIONS = [
         "segment_idx": 4,
         "lat": 10.731,
         "lon": 106.611,
-        "base_water": 22.0
+        "latitude": 10.731,
+        "longitude": 106.611,
+        "base_water": 22.0,
+        "water_level_cm": 22.0,
+        "status": "ALERT"
     }
 ]
 

@@ -6,6 +6,9 @@ export const ROADS_INITIAL = [
     "length_km": 3.4,
     "type": "ROAD",
     "base_water": 52.0,
+    "max_water_cm": 52.0,
+    "avg_water_cm": 35.4,
+    "severity": "CRITICAL",
     "avoid_advice": "Ngập sâu đoạn Cầu Hy Vọng. Khuyên chuyển hướng sang đường Trường Chinh hoặc Quang Trung.",
     "coordinates": [
       [
@@ -227,35 +230,55 @@ export const ROADS_INITIAL = [
         "name": "Ngã ba Trường Chinh",
         "lat": 10.82346,
         "lon": 106.62943,
-        "base_water": 20.8
+        "latitude": 10.82346,
+        "longitude": 106.62943,
+        "base_water": 20.8,
+        "water_level_cm": 20.8,
+        "status": "ALERT"
       },
       {
         "id": "node-02",
         "name": "Đoạn giao Tây Thạnh",
         "lat": 10.82712,
         "lon": 106.6315,
-        "base_water": 39.0
+        "latitude": 10.82712,
+        "longitude": 106.6315,
+        "base_water": 39.0,
+        "water_level_cm": 39.0,
+        "status": "WARNING"
       },
       {
         "id": "node-03",
         "name": "Rốn ngập Cầu Hy Vọng",
         "lat": 10.83283,
         "lon": 106.63422,
-        "base_water": 52.0
+        "latitude": 10.83283,
+        "longitude": 106.63422,
+        "base_water": 52.0,
+        "water_level_cm": 52.0,
+        "status": "CRITICAL"
       },
       {
         "id": "node-04",
         "name": "Đoạn giao Huỳnh Văn Nghệ",
         "lat": 10.83905,
         "lon": 106.63708,
-        "base_water": 41.6
+        "latitude": 10.83905,
+        "longitude": 106.63708,
+        "base_water": 41.6,
+        "water_level_cm": 41.6,
+        "status": "WARNING"
       },
       {
         "id": "node-05",
         "name": "Ngã ba Quang Trung",
         "lat": 10.84429,
         "lon": 106.64011,
-        "base_water": 23.4
+        "latitude": 10.84429,
+        "longitude": 106.64011,
+        "base_water": 23.4,
+        "water_level_cm": 23.4,
+        "status": "ALERT"
       }
     ]
   },
@@ -266,6 +289,9 @@ export const ROADS_INITIAL = [
     "length_km": 4.1,
     "type": "ROAD",
     "base_water": 50.0,
+    "max_water_cm": 50.0,
+    "avg_water_cm": 34.0,
+    "severity": "CRITICAL",
     "avoid_advice": "Ngập sâu đoạn Chợ Cầu. Khuyên phương tiện chuyển hướng sang QL1A hoặc đường Song Hành QL22.",
     "coordinates": [
       [
@@ -511,35 +537,55 @@ export const ROADS_INITIAL = [
         "name": "Cầu Tham Lương - Trường Chinh",
         "lat": 10.82783,
         "lon": 106.62674,
-        "base_water": 20.0
+        "latitude": 10.82783,
+        "longitude": 106.62674,
+        "base_water": 20.0,
+        "water_level_cm": 20.0,
+        "status": "ALERT"
       },
       {
         "id": "node-07",
         "name": "Giao lộ Đông Hưng Thuận",
         "lat": 10.83544,
         "lon": 106.62882,
-        "base_water": 37.5
+        "latitude": 10.83544,
+        "longitude": 106.62882,
+        "base_water": 37.5,
+        "water_level_cm": 37.5,
+        "status": "WARNING"
       },
       {
         "id": "node-08",
         "name": "Rốn ngập Chợ Cầu",
         "lat": 10.84278,
         "lon": 106.63091,
-        "base_water": 50.0
+        "latitude": 10.84278,
+        "longitude": 106.63091,
+        "base_water": 50.0,
+        "water_level_cm": 50.0,
+        "status": "CRITICAL"
       },
       {
         "id": "node-09",
         "name": "Đoạn giao Tô Ký",
         "lat": 10.84979,
         "lon": 106.63654,
-        "base_water": 40.0
+        "latitude": 10.84979,
+        "longitude": 106.63654,
+        "base_water": 40.0,
+        "water_level_cm": 40.0,
+        "status": "WARNING"
       },
       {
         "id": "node-10",
         "name": "Ngã ba QL1A Tân Thới Hiệp",
         "lat": 10.85647,
         "lon": 106.63941,
-        "base_water": 22.5
+        "latitude": 10.85647,
+        "longitude": 106.63941,
+        "base_water": 22.5,
+        "water_level_cm": 22.5,
+        "status": "ALERT"
       }
     ]
   },
@@ -550,6 +596,9 @@ export const ROADS_INITIAL = [
     "length_km": 4.8,
     "type": "ROAD",
     "base_water": 56.0,
+    "max_water_cm": 56.0,
+    "avg_water_cm": 38.1,
+    "severity": "CRITICAL",
     "avoid_advice": "Triều cường dâng ngập đoạn Trần Trọng Cung. Khuyên đi đường Nguyễn Thị Thập hoặc Nguyễn Lương Bằng.",
     "coordinates": [
       [
@@ -679,35 +728,55 @@ export const ROADS_INITIAL = [
         "name": "Chân cầu Tân Thuận",
         "lat": 10.73791,
         "lon": 106.73034,
-        "base_water": 22.4
+        "latitude": 10.73791,
+        "longitude": 106.73034,
+        "base_water": 22.4,
+        "water_level_cm": 22.4,
+        "status": "ALERT"
       },
       {
         "id": "node-12",
         "name": "Ngã tư Nguyễn Thị Thập",
         "lat": 10.74141,
         "lon": 106.7298,
-        "base_water": 42.0
+        "latitude": 10.74141,
+        "longitude": 106.7298,
+        "base_water": 42.0,
+        "water_level_cm": 42.0,
+        "status": "WARNING"
       },
       {
         "id": "node-13",
         "name": "Rốn ngập Trần Trọng Cung",
         "lat": 10.74375,
         "lon": 106.72954,
-        "base_water": 56.0
+        "latitude": 10.74375,
+        "longitude": 106.72954,
+        "base_water": 56.0,
+        "water_level_cm": 56.0,
+        "status": "CRITICAL"
       },
       {
         "id": "node-14",
         "name": "Chân cầu Phú Mỹ",
         "lat": 10.74832,
         "lon": 106.72887,
-        "base_water": 44.8
+        "latitude": 10.74832,
+        "longitude": 106.72887,
+        "base_water": 44.8,
+        "water_level_cm": 44.8,
+        "status": "WARNING"
       },
       {
         "id": "node-15",
         "name": "Chân cầu Phú Xuân",
         "lat": 10.75265,
         "lon": 106.72855,
-        "base_water": 25.2
+        "latitude": 10.75265,
+        "longitude": 106.72855,
+        "base_water": 25.2,
+        "water_level_cm": 25.2,
+        "status": "ALERT"
       }
     ]
   },
@@ -718,6 +787,9 @@ export const ROADS_INITIAL = [
     "length_km": 3.6,
     "type": "ROAD",
     "base_water": 53.0,
+    "max_water_cm": 53.0,
+    "avg_water_cm": 36.1,
+    "severity": "CRITICAL",
     "avoid_advice": "Bờ kè Kênh Tẻ nước tràn bờ. Khuyên chuyển hướng sang đường Nguyễn Thị Thập hoặc đường số 15.",
     "coordinates": [
       [
@@ -979,35 +1051,55 @@ export const ROADS_INITIAL = [
         "name": "Chân cầu Tân Thuận 2",
         "lat": 10.75101,
         "lon": 106.69107,
-        "base_water": 21.2
+        "latitude": 10.75101,
+        "longitude": 106.69107,
+        "base_water": 21.2,
+        "water_level_cm": 21.2,
+        "status": "ALERT"
       },
       {
         "id": "node-17",
         "name": "Bờ kè Lâm Văn Bền",
         "lat": 10.75172,
         "lon": 106.69849,
-        "base_water": 39.8
+        "latitude": 10.75172,
+        "longitude": 106.69849,
+        "base_water": 39.8,
+        "water_level_cm": 39.8,
+        "status": "WARNING"
       },
       {
         "id": "node-18",
         "name": "Rốn ngập Cầu Kênh Tẻ",
         "lat": 10.7518,
         "lon": 106.70669,
-        "base_water": 53.0
+        "latitude": 10.7518,
+        "longitude": 106.70669,
+        "base_water": 53.0,
+        "water_level_cm": 53.0,
+        "status": "CRITICAL"
       },
       {
         "id": "node-19",
         "name": "Chân cầu Rạch Ông",
         "lat": 10.75189,
         "lon": 106.71725,
-        "base_water": 42.4
+        "latitude": 10.75189,
+        "longitude": 106.71725,
+        "base_water": 42.4,
+        "water_level_cm": 42.4,
+        "status": "WARNING"
       },
       {
         "id": "node-20",
         "name": "Chân cầu Chữ Y",
         "lat": 10.75749,
         "lon": 106.72229,
-        "base_water": 23.9
+        "latitude": 10.75749,
+        "longitude": 106.72229,
+        "base_water": 23.9,
+        "water_level_cm": 23.9,
+        "status": "ALERT"
       }
     ]
   },
@@ -1018,6 +1110,9 @@ export const ROADS_INITIAL = [
     "length_km": 3.2,
     "type": "ROAD",
     "base_water": 46.0,
+    "max_water_cm": 46.0,
+    "avg_water_cm": 31.3,
+    "severity": "WARNING",
     "avoid_advice": "Ngập đoạn hầm chui và The Manor. Khuyên đi vòng qua đường Điện Biên Phủ hoặc đường Ung Văn Khiêm.",
     "coordinates": [
       [
@@ -1155,35 +1250,55 @@ export const ROADS_INITIAL = [
         "name": "Chân Cầu Sài Gòn",
         "lat": 10.79802,
         "lon": 106.7245,
-        "base_water": 18.4
+        "latitude": 10.79802,
+        "longitude": 106.7245,
+        "base_water": 18.4,
+        "water_level_cm": 18.4,
+        "status": "SAFE"
       },
       {
         "id": "node-22",
         "name": "The Manor - Landmark 81",
         "lat": 10.78905,
         "lon": 106.71455,
-        "base_water": 34.5
+        "latitude": 10.78905,
+        "longitude": 106.71455,
+        "base_water": 34.5,
+        "water_level_cm": 34.5,
+        "status": "ALERT"
       },
       {
         "id": "node-23",
         "name": "Rốn ngập Ung Văn Khiêm nối dài",
         "lat": 10.78932,
         "lon": 106.71481,
-        "base_water": 46.0
+        "latitude": 10.78932,
+        "longitude": 106.71481,
+        "base_water": 46.0,
+        "water_level_cm": 46.0,
+        "status": "WARNING"
       },
       {
         "id": "node-24",
         "name": "Hầm chui Nguyễn Hữu Cảnh",
         "lat": 10.78691,
         "lon": 106.70905,
-        "base_water": 36.8
+        "latitude": 10.78691,
+        "longitude": 106.70905,
+        "base_water": 36.8,
+        "water_level_cm": 36.8,
+        "status": "WARNING"
       },
       {
         "id": "node-25",
         "name": "Chân Cầu Thủ Thiêm 1",
         "lat": 10.7868,
         "lon": 106.70936,
-        "base_water": 20.7
+        "latitude": 10.7868,
+        "longitude": 106.70936,
+        "base_water": 20.7,
+        "water_level_cm": 20.7,
+        "status": "ALERT"
       }
     ]
   },
@@ -1194,6 +1309,9 @@ export const ROADS_INITIAL = [
     "length_km": 2.8,
     "type": "ROAD",
     "base_water": 44.0,
+    "max_water_cm": 44.0,
+    "avg_water_cm": 29.9,
+    "severity": "WARNING",
     "avoid_advice": "Ngập đoạn Bến xe Miền Đông cũ và ngã ba D2. Khuyên đi theo đường Bạch Đằng hoặc Đinh Bộ Lĩnh.",
     "coordinates": [
       [
@@ -1315,35 +1433,55 @@ export const ROADS_INITIAL = [
         "name": "Ngã tư Hàng Xanh",
         "lat": 10.80993,
         "lon": 106.71262,
-        "base_water": 17.6
+        "latitude": 10.80993,
+        "longitude": 106.71262,
+        "base_water": 17.6,
+        "water_level_cm": 17.6,
+        "status": "SAFE"
       },
       {
         "id": "node-27",
         "name": "Đoạn Chu Văn An",
         "lat": 10.80781,
         "lon": 106.7159,
-        "base_water": 33.0
+        "latitude": 10.80781,
+        "longitude": 106.7159,
+        "base_water": 33.0,
+        "water_level_cm": 33.0,
+        "status": "ALERT"
       },
       {
         "id": "node-28",
         "name": "Trước Bến xe Miền Đông",
         "lat": 10.8061,
         "lon": 106.7204,
-        "base_water": 44.0
+        "latitude": 10.8061,
+        "longitude": 106.7204,
+        "base_water": 44.0,
+        "water_level_cm": 44.0,
+        "status": "WARNING"
       },
       {
         "id": "node-29",
         "name": "Chân Cầu Bình Triệu",
         "lat": 10.80209,
         "lon": 106.7226,
-        "base_water": 35.2
+        "latitude": 10.80209,
+        "longitude": 106.7226,
+        "base_water": 35.2,
+        "water_level_cm": 35.2,
+        "status": "WARNING"
       },
       {
         "id": "node-30",
         "name": "Ngã ba Đường D2 (Nguyễn Gia Trí)",
         "lat": 10.79914,
         "lon": 106.72392,
-        "base_water": 19.8
+        "latitude": 10.79914,
+        "longitude": 106.72392,
+        "base_water": 19.8,
+        "water_level_cm": 19.8,
+        "status": "SAFE"
       }
     ]
   }
@@ -1356,6 +1494,9 @@ export const ZONES_INITIAL = [
     "district": "TP. Thủ Đức",
     "type": "ZONE",
     "base_water": 54.0,
+    "max_water_cm": 54.0,
+    "avg_water_cm": 37.8,
+    "severity": "CRITICAL",
     "area_km2": 3.8,
     "center": [
       10.8055,
@@ -1394,34 +1535,59 @@ export const ZONES_INITIAL = [
     "avoid_advice": "Vùng bán đảo trũng thấp sát sông Sài Gòn ngập diện rộng. Tránh lưu thông vào trục Quốc Hương - Xuân Thủy.",
     "nodes": [
       {
+        "id": "zone-01-node-01",
         "name": "Cổng vào Xa Lộ Hà Nội - Thảo Điền",
         "lat": 10.8015,
         "lon": 106.738,
-        "base_water": 20.0
+        "latitude": 10.8015,
+        "longitude": 106.738,
+        "base_water": 20.0,
+        "water_level_cm": 20.0,
+        "status": "ALERT"
       },
       {
+        "id": "zone-01-node-02",
         "name": "Giao lộ Xuân Thủy - Quốc Hương",
         "lat": 10.803,
         "lon": 106.7345,
-        "base_water": 38.0
+        "latitude": 10.803,
+        "longitude": 106.7345,
+        "base_water": 38.0,
+        "water_level_cm": 38.0,
+        "status": "WARNING"
       },
       {
+        "id": "zone-01-node-03",
         "name": "Rốn ngập trung tâm Quốc Hương",
         "lat": 10.8035,
         "lon": 106.7321,
-        "base_water": 54.0
+        "latitude": 10.8035,
+        "longitude": 106.7321,
+        "base_water": 54.0,
+        "water_level_cm": 54.0,
+        "status": "CRITICAL"
       },
       {
+        "id": "zone-01-node-04",
         "name": "Trường Quốc tế BIS Thảo Điền",
         "lat": 10.8075,
         "lon": 106.73,
-        "base_water": 45.0
+        "latitude": 10.8075,
+        "longitude": 106.73,
+        "base_water": 45.0,
+        "water_level_cm": 45.0,
+        "status": "WARNING"
       },
       {
+        "id": "zone-01-node-05",
         "name": "Bờ kè Nguyễn Văn Hưởng",
         "lat": 10.812,
         "lon": 106.728,
-        "base_water": 32.0
+        "latitude": 10.812,
+        "longitude": 106.728,
+        "base_water": 32.0,
+        "water_level_cm": 32.0,
+        "status": "ALERT"
       }
     ]
   },
@@ -1431,6 +1597,9 @@ export const ZONES_INITIAL = [
     "district": "TP. Thủ Đức",
     "type": "ZONE",
     "base_water": 60.0,
+    "max_water_cm": 60.0,
+    "avg_water_cm": 39.6,
+    "severity": "CRITICAL",
     "area_km2": 2.2,
     "center": [
       10.8525,
@@ -1465,34 +1634,59 @@ export const ZONES_INITIAL = [
     "avoid_advice": "Lòng chảo tụ nước mưa đổ dồn từ dốc Đặng Thị Rành và Võ Văn Ngân. Cấm mọi phương tiện qua rốn Chợ.",
     "nodes": [
       {
+        "id": "zone-02-node-01",
         "name": "Ngã 5 Thủ Đức - Kha Vạn Cân",
         "lat": 10.8495,
         "lon": 106.7625,
-        "base_water": 26.0
+        "latitude": 10.8495,
+        "longitude": 106.7625,
+        "base_water": 26.0,
+        "water_level_cm": 26.0,
+        "status": "ALERT"
       },
       {
+        "id": "zone-02-node-02",
         "name": "Dốc Dương Văn Cam",
         "lat": 10.851,
         "lon": 106.76,
-        "base_water": 48.0
+        "latitude": 10.851,
+        "longitude": 106.76,
+        "base_water": 48.0,
+        "water_level_cm": 48.0,
+        "status": "WARNING"
       },
       {
+        "id": "zone-02-node-03",
         "name": "Rốn trũng Chợ Thủ Đức",
         "lat": 10.8525,
         "lon": 106.7582,
-        "base_water": 60.0
+        "latitude": 10.8525,
+        "longitude": 106.7582,
+        "base_water": 60.0,
+        "water_level_cm": 60.0,
+        "status": "CRITICAL"
       },
       {
+        "id": "zone-02-node-04",
         "name": "Đặng Thị Rành - Tô Ngọc Vân",
         "lat": 10.8535,
         "lon": 106.7565,
-        "base_water": 42.0
+        "latitude": 10.8535,
+        "longitude": 106.7565,
+        "base_water": 42.0,
+        "water_level_cm": 42.0,
+        "status": "WARNING"
       },
       {
+        "id": "zone-02-node-05",
         "name": "Cầu Ngang - Võ Văn Ngân",
         "lat": 10.855,
         "lon": 106.7535,
-        "base_water": 22.0
+        "latitude": 10.855,
+        "longitude": 106.7535,
+        "base_water": 22.0,
+        "water_level_cm": 22.0,
+        "status": "ALERT"
       }
     ]
   },
@@ -1502,6 +1696,9 @@ export const ZONES_INITIAL = [
     "district": "Gò Vấp",
     "type": "ZONE",
     "base_water": 52.0,
+    "max_water_cm": 52.0,
+    "avg_water_cm": 34.8,
+    "severity": "CRITICAL",
     "area_km2": 3.1,
     "center": [
       10.835,
@@ -1532,34 +1729,59 @@ export const ZONES_INITIAL = [
     "avoid_advice": "Rốn ngập do địa hình dốc tụ nước lưu vực Tham Lương. Tránh đi vào đường Nguyễn Văn Khối đoạn Làng Hoa.",
     "nodes": [
       {
+        "id": "zone-03-node-01",
         "name": "Ngã ba Nguyễn Oanh - Lê Đức Thọ",
         "lat": 10.844,
         "lon": 106.679,
-        "base_water": 20.0
+        "latitude": 10.844,
+        "longitude": 106.679,
+        "base_water": 20.0,
+        "water_level_cm": 20.0,
+        "status": "ALERT"
       },
       {
+        "id": "zone-03-node-02",
         "name": "Lê Đức Thọ - Thống Nhất",
         "lat": 10.84,
         "lon": 106.675,
-        "base_water": 36.0
+        "latitude": 10.84,
+        "longitude": 106.675,
+        "base_water": 36.0,
+        "water_level_cm": 36.0,
+        "status": "WARNING"
       },
       {
+        "id": "zone-03-node-03",
         "name": "Rốn ngập Cây Trâm - Nguyễn Văn Khối",
         "lat": 10.835,
         "lon": 106.672,
-        "base_water": 52.0
+        "latitude": 10.835,
+        "longitude": 106.672,
+        "base_water": 52.0,
+        "water_level_cm": 52.0,
+        "status": "CRITICAL"
       },
       {
+        "id": "zone-03-node-04",
         "name": "Khu vực Công viên Làng Hoa",
         "lat": 10.8385,
         "lon": 106.666,
-        "base_water": 42.0
+        "latitude": 10.8385,
+        "longitude": 106.666,
+        "base_water": 42.0,
+        "water_level_cm": 42.0,
+        "status": "WARNING"
       },
       {
+        "id": "zone-03-node-05",
         "name": "Nguyễn Văn Khối - Lê Văn Thọ",
         "lat": 10.841,
         "lon": 106.661,
-        "base_water": 24.0
+        "latitude": 10.841,
+        "longitude": 106.661,
+        "base_water": 24.0,
+        "water_level_cm": 24.0,
+        "status": "ALERT"
       }
     ]
   },
@@ -1569,6 +1791,9 @@ export const ZONES_INITIAL = [
     "district": "Bình Tân & Q.8",
     "type": "ZONE",
     "base_water": 55.0,
+    "max_water_cm": 55.0,
+    "avg_water_cm": 37.8,
+    "severity": "CRITICAL",
     "area_km2": 4.5,
     "center": [
       10.718,
@@ -1599,34 +1824,59 @@ export const ZONES_INITIAL = [
     "avoid_advice": "Triều cường dâng Kênh Đôi ngập bờ kè Bến Phú Định & Hồ Học Lãm. Xe máy tuyệt đối tránh đi vào sát mép kênh.",
     "nodes": [
       {
+        "id": "zone-04-node-01",
         "name": "Bờ kè Bến Phú Định",
         "lat": 10.71,
         "lon": 106.628,
-        "base_water": 28.0
+        "latitude": 10.71,
+        "longitude": 106.628,
+        "base_water": 28.0,
+        "water_level_cm": 28.0,
+        "status": "ALERT"
       },
       {
+        "id": "zone-04-node-02",
         "name": "Cầu Mỹ Thuận - An Dương Vương",
         "lat": 10.714,
         "lon": 106.623,
-        "base_water": 44.0
+        "latitude": 10.714,
+        "longitude": 106.623,
+        "base_water": 44.0,
+        "water_level_cm": 44.0,
+        "status": "WARNING"
       },
       {
+        "id": "zone-04-node-03",
         "name": "Rốn ngập Hồ Học Lãm",
         "lat": 10.718,
         "lon": 106.6185,
-        "base_water": 55.0
+        "latitude": 10.718,
+        "longitude": 106.6185,
+        "base_water": 55.0,
+        "water_level_cm": 55.0,
+        "status": "CRITICAL"
       },
       {
+        "id": "zone-04-node-04",
         "name": "Nút giao Đại lộ Võ Văn Kiệt",
         "lat": 10.723,
         "lon": 106.615,
-        "base_water": 40.0
+        "latitude": 10.723,
+        "longitude": 106.615,
+        "base_water": 40.0,
+        "water_level_cm": 40.0,
+        "status": "WARNING"
       },
       {
+        "id": "zone-04-node-05",
         "name": "Kinh Dương Vương - Vòng xoay An Lạc",
         "lat": 10.731,
         "lon": 106.611,
-        "base_water": 22.0
+        "latitude": 10.731,
+        "longitude": 106.611,
+        "base_water": 22.0,
+        "water_level_cm": 22.0,
+        "status": "ALERT"
       }
     ]
   }

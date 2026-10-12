@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
-import { Navigation, Plus, Minus, Layers, Radio, Waves, ShieldAlert } from 'lucide-react';
+import { Navigation, Plus, Minus, Layers, Radio, Waves } from 'lucide-react';
 
 // Bảng màu Neon tương phản cao cho bản đồ nền tối (High-Contrast Neon Dark Mode)
 const SEVERITY_CONFIG = {
@@ -96,7 +96,10 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
     if (!showRoads || !roads || roads.length === 0) return;
 
     roads.forEach(road => {
-      const cfg = SEVERITY_CONFIG[road.severity] || SEVERITY_CONFIG.SAFE;
+      const maxWater = road.max_water_cm ?? road.base_water ?? 40.0;
+      const avgWater = road.avg_water_cm ?? Math.round(maxWater * 0.7);
+      const severity = road.severity || (maxWater >= 50 ? 'CRITICAL' : maxWater >= 35 ? 'WARNING' : maxWater >= 20 ? 'ALERT' : 'SAFE');
+      const cfg = SEVERITY_CONFIG[severity] || SEVERITY_CONFIG.SAFE;
       const color = cfg.color;
 
       if (road.coordinates && road.coordinates.length > 1) {
@@ -117,7 +120,7 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
           opacity: 0.95,
           lineCap: 'round',
           lineJoin: 'round',
-          className: `neon-road-line ${road.severity === 'CRITICAL' ? 'neon-road-pulse' : ''}`
+          className: `neon-road-line ${severity === 'CRITICAL' ? 'neon-road-pulse' : ''}`
         });
 
         const popupContent = `
@@ -128,7 +131,7 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
                 <span style="font-weight: 800; font-size: 14px; color: #f8fafc;">${road.name}</span>
               </div>
               <span style="font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; background: ${cfg.bg}; color: ${color}; border: 1px solid ${cfg.border};">
-                ${road.severity}
+                ${severity}
               </span>
             </div>
             
@@ -140,13 +143,13 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
                 <span style="color: #94a3b8;">Độ sâu cao nhất:</span>
                 <span style="font-weight: 800; font-family: 'Space Grotesk'; color: ${color}; font-size: 14px;">
-                  ↑ ${road.max_water_cm} cm
+                  ↑ ${maxWater} cm
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 12px;">
                 <span style="color: #94a3b8;">Mực nước trung bình:</span>
                 <span style="font-weight: 700; font-family: 'Space Grotesk'; color: #e2e8f0;">
-                  ${road.avg_water_cm} cm
+                  ${avgWater} cm
                 </span>
               </div>
             </div>
@@ -178,11 +181,13 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
     if (!showZones || !zones || zones.length === 0) return;
 
     zones.forEach(zone => {
-      const cfg = SEVERITY_CONFIG[zone.severity] || SEVERITY_CONFIG.SAFE;
+      const maxWater = zone.max_water_cm ?? zone.base_water ?? 50.0;
+      const avgWater = zone.avg_water_cm ?? Math.round(maxWater * 0.75);
+      const severity = zone.severity || (maxWater >= 50 ? 'CRITICAL' : maxWater >= 35 ? 'WARNING' : maxWater >= 20 ? 'ALERT' : 'SAFE');
+      const cfg = SEVERITY_CONFIG[severity] || SEVERITY_CONFIG.SAFE;
       const color = cfg.color;
 
       if (zone.polygon && zone.polygon.length > 2) {
-        // Vùng bao đa giác ngập diện rộng
         const zonePolygon = L.polygon(zone.polygon, {
           color: color,
           weight: 2.5,
@@ -193,7 +198,6 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
           className: 'flood-zone-boundary'
         });
 
-        // Tâm rốn ngập trung tâm với sóng lan tỏa
         const centerCircle = L.circle(zone.center, {
           radius: 350,
           color: color,
@@ -211,7 +215,7 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
                 <span style="font-weight: 800; font-size: 14px; color: #f8fafc;">${zone.name}</span>
               </div>
               <span style="font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; background: ${cfg.bg}; color: ${color}; border: 1px solid ${cfg.border};">
-                ${zone.severity}
+                ${severity}
               </span>
             </div>
             
@@ -223,13 +227,13 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
                 <span style="color: #94a3b8;">Độ sâu rốn ngập:</span>
                 <span style="font-weight: 800; font-family: 'Space Grotesk'; color: ${color}; font-size: 14px;">
-                  ↑ ${zone.max_water_cm} cm
+                  ↑ ${maxWater} cm
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 12px;">
                 <span style="color: #94a3b8;">Mực nước trung bình vùng:</span>
                 <span style="font-weight: 700; font-family: 'Space Grotesk'; color: #e2e8f0;">
-                  ${zone.avg_water_cm} cm
+                  ${avgWater} cm
                 </span>
               </div>
             </div>
@@ -262,7 +266,13 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
     // Vẽ trạm thuộc Tuyến đường
     roads?.forEach(road => {
       road.nodes?.forEach((node, nodeIdx) => {
-        const cfg = SEVERITY_CONFIG[node.status] || SEVERITY_CONFIG.SAFE;
+        const lat = node.latitude ?? node.lat;
+        const lon = node.longitude ?? node.lon;
+        if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
+
+        const water = node.water_level_cm ?? node.base_water ?? 20.0;
+        const status = node.status || (water >= 50 ? 'CRITICAL' : water >= 35 ? 'WARNING' : water >= 20 ? 'ALERT' : 'SAFE');
+        const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.SAFE;
         const color = cfg.color;
 
         const iconHtml = `
@@ -273,7 +283,7 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
         `;
 
         const icon = L.divIcon({ html: iconHtml, className: 'custom-road-node-icon', iconSize: [20, 20], iconAnchor: [10, 10] });
-        const marker = L.marker([node.latitude, node.longitude], { icon: icon });
+        const marker = L.marker([lat, lon], { icon: icon });
 
         const popup = `
           <div style="padding: 10px; font-family: 'Plus Jakarta Sans', sans-serif;">
@@ -288,12 +298,12 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; color: #94a3b8;">Mực nước đo được:</span>
                 <span style="font-size: 14px; font-weight: 800; font-family: 'Space Grotesk'; color: ${color};">
-                  ${node.water_level_cm} cm
+                  ${water} cm
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                 <span style="font-size: 11px; color: #94a3b8;">Trạng thái:</span>
-                <span style="font-size: 11px; font-weight: 700; color: ${color};">${node.status}</span>
+                <span style="font-size: 11px; font-weight: 700; color: ${color};">${status}</span>
               </div>
             </div>
           </div>
@@ -307,7 +317,13 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
     // Vẽ trạm thuộc Khu vực ngập
     zones?.forEach(zone => {
       zone.nodes?.forEach((node, nodeIdx) => {
-        const cfg = SEVERITY_CONFIG[node.status] || SEVERITY_CONFIG.SAFE;
+        const lat = node.latitude ?? node.lat;
+        const lon = node.longitude ?? node.lon;
+        if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
+
+        const water = node.water_level_cm ?? node.base_water ?? 20.0;
+        const status = node.status || (water >= 50 ? 'CRITICAL' : water >= 35 ? 'WARNING' : water >= 20 ? 'ALERT' : 'SAFE');
+        const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.SAFE;
         const color = cfg.color;
 
         const iconHtml = `
@@ -318,7 +334,7 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
         `;
 
         const icon = L.divIcon({ html: iconHtml, className: 'custom-road-node-icon', iconSize: [20, 20], iconAnchor: [10, 10] });
-        const marker = L.marker([node.latitude, node.longitude], { icon: icon });
+        const marker = L.marker([lat, lon], { icon: icon });
 
         const popup = `
           <div style="padding: 10px; font-family: 'Plus Jakarta Sans', sans-serif;">
@@ -333,12 +349,12 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; color: #94a3b8;">Mực nước đo được:</span>
                 <span style="font-size: 14px; font-weight: 800; font-family: 'Space Grotesk'; color: ${color};">
-                  ${node.water_level_cm} cm
+                  ${water} cm
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                 <span style="font-size: 11px; color: #94a3b8;">Trạng thái:</span>
-                <span style="font-size: 11px; font-weight: 700; color: ${color};">${node.status}</span>
+                <span style="font-size: 11px; font-weight: 700; color: ${color};">${status}</span>
               </div>
             </div>
           </div>
@@ -354,12 +370,20 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
   useEffect(() => {
     if (!mapRef.current || !selectedLocation) return;
 
-    if (selectedLocation.coordinates && selectedLocation.coordinates.length > 0) {
-      mapRef.current.fitBounds(selectedLocation.coordinates, { padding: [50, 50], maxZoom: 15, duration: 1.2 });
-    } else if (selectedLocation.polygon && selectedLocation.polygon.length > 0) {
-      mapRef.current.fitBounds(selectedLocation.polygon, { padding: [50, 50], maxZoom: 15, duration: 1.2 });
-    } else if (selectedLocation.latitude && selectedLocation.longitude) {
-      mapRef.current.flyTo([selectedLocation.latitude, selectedLocation.longitude], 14, { duration: 1.2 });
+    try {
+      if (selectedLocation.coordinates && selectedLocation.coordinates.length > 0) {
+        mapRef.current.fitBounds(selectedLocation.coordinates, { padding: [50, 50], maxZoom: 15, duration: 1.2 });
+      } else if (selectedLocation.polygon && selectedLocation.polygon.length > 0) {
+        mapRef.current.fitBounds(selectedLocation.polygon, { padding: [50, 50], maxZoom: 15, duration: 1.2 });
+      } else {
+        const lat = selectedLocation.latitude ?? selectedLocation.lat ?? selectedLocation.center?.[0];
+        const lon = selectedLocation.longitude ?? selectedLocation.lon ?? selectedLocation.center?.[1];
+        if (lat != null && lon != null && !isNaN(lat) && !isNaN(lon)) {
+          mapRef.current.flyTo([lat, lon], 14, { duration: 1.2 });
+        }
+      }
+    } catch (e) {
+      console.warn("Navigation error:", e);
     }
   }, [selectedLocation]);
 

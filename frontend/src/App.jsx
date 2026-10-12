@@ -149,30 +149,41 @@ const INITIAL_DATA = {
   },
   tides: TIDES_INITIAL,
   severe_locations: [
-    ...ROADS_INITIAL.map((r, i) => ({
-      id: r.id,
-      name: r.name,
-      district: r.district,
-      water_level_m: Number((r.max_water_cm / 100).toFixed(2)),
-      severity: r.severity,
-      minutes_ago: 3,
-      latitude: r.nodes[2].lat,
-      longitude: r.nodes[2].lon
-    })),
-    ...ZONES_INITIAL.map((z, i) => ({
-      id: z.id,
-      name: z.name,
-      district: z.district,
-      water_level_m: Number((z.max_water_cm / 100).toFixed(2)),
-      severity: z.severity,
-      minutes_ago: 3,
-      latitude: z.center[0],
-      longitude: z.center[1]
-    }))
+    ...(ROADS_INITIAL || []).map((r, i) => {
+      const centerNode = (r.nodes && r.nodes[2]) || (r.nodes && r.nodes[0]) || {};
+      const lat = centerNode.latitude ?? centerNode.lat ?? (r.coordinates && r.coordinates[0] && r.coordinates[0][0]) ?? 10.7769;
+      const lon = centerNode.longitude ?? centerNode.lon ?? (r.coordinates && r.coordinates[0] && r.coordinates[0][1]) ?? 106.7009;
+      const maxW = r.max_water_cm ?? r.base_water ?? 50.0;
+      return {
+        id: r.id || `road-${i + 1}`,
+        name: r.name || 'Tuyến đường',
+        district: r.district || 'TP.HCM',
+        water_level_m: Number((maxW / 100).toFixed(2)),
+        severity: r.severity || 'CRITICAL',
+        minutes_ago: 3,
+        latitude: lat,
+        longitude: lon
+      };
+    }),
+    ...(ZONES_INITIAL || []).map((z, i) => {
+      const lat = (z.center && z.center[0]) ?? 10.7769;
+      const lon = (z.center && z.center[1]) ?? 106.7009;
+      const maxW = z.max_water_cm ?? z.base_water ?? 55.0;
+      return {
+        id: z.id || `zone-${i + 1}`,
+        name: z.name || 'Khu vực ngập',
+        district: z.district || 'TP.HCM',
+        water_level_m: Number((maxW / 100).toFixed(2)),
+        severity: z.severity || 'CRITICAL',
+        minutes_ago: 3,
+        latitude: lat,
+        longitude: lon
+      };
+    })
   ],
   devices: [],
-  roads: ROADS_INITIAL,
-  zones: ZONES_INITIAL
+  roads: ROADS_INITIAL || [],
+  zones: ZONES_INITIAL || []
 };
 
 export default function App() {
@@ -197,7 +208,12 @@ export default function App() {
           try {
             const parsed = JSON.parse(event.data);
             if (parsed && (parsed.devices || parsed.roads || parsed.zones)) {
-              setData(parsed);
+              setData(prev => ({
+                ...prev,
+                ...parsed,
+                roads: parsed.roads && parsed.roads.length > 0 ? parsed.roads : prev.roads,
+                zones: parsed.zones && parsed.zones.length > 0 ? parsed.zones : prev.zones
+              }));
             }
           } catch (e) {
             console.error('Failed to parse WS data:', e);
