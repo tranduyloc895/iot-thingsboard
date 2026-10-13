@@ -35,10 +35,10 @@ loki:
 
     # Cấu hình Kubernetes Secret cho Access Key & Secret Key
     secret:
-      create: true
+      create: false
       name: "cmc-s3-secret"
-      accessKey: "REPLACE_WITH_CMC_S3_ACCESS_KEY"
-      secretKey: "REPLACE_WITH_CMC_S3_SECRET_KEY"
+      accessKey: ""
+      secretKey: ""
 
 # ==========================================
 # 2. PROMTAIL (Gom log từ tất cả các Pods)
