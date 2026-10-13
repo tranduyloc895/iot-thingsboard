@@ -86,6 +86,9 @@ spec:
           - name: MQTT_BIND_PORT
             value: "{{ .Values.mqtt.port.number }}"
           {{- end }}
+          {{- with .Values.mqtt.env }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
           volumeMounts:
             - mountPath: /config
               name: {{ .Release.Name }}-mqtt-transport-config

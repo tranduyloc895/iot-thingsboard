@@ -27,7 +27,6 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 6
   targetCPUUtilizationPercentage: 70
-  targetMemoryUtilizationPercentage: 80
 
 ingress:
   enabled: true

@@ -30,7 +30,6 @@ backend:
     minReplicas: 2
     maxReplicas: 6
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
   env:
     APP_ENV: "production"
     PORT: "8000"
@@ -58,7 +57,6 @@ frontend:
     minReplicas: 2
     maxReplicas: 6
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
 
 ingress:
   enabled: true

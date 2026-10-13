@@ -126,7 +126,6 @@ jsexecutor:
     minReplicas: 2
     maxReplicas: 6
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
   nodeSelector:
     nodegroup: workload
   tolerations: []
@@ -175,13 +174,12 @@ mqtt:
       cpu: "500m"
   env:
     - name: JAVA_OPTS
-      value: "-Xms512M -Xmx512M"
+      value: "-Xms256M -Xmx512M"
   autoscaling:
     enabled: true
     minReplicas: 2
     maxReplicas: 6
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
   nodeSelector:
     nodegroup: workload
   tolerations: []
@@ -220,17 +218,19 @@ http:
     port: 8082
   resources:
     requests:
-      memory: "256Mi"
+      memory: "512Mi"
       cpu: "100m"
     limits:
-      memory: "512Mi"
+      memory: "1Gi"
       cpu: "500m"
+  env:
+    - name: JAVA_OPTS
+      value: "-Xms256M -Xmx512M"
   autoscaling:
     enabled: true
     minReplicas: 2
-    maxReplicas: 6
+    maxReplicas: 4
     targetCPUUtilizationPercentage: 70
-    targetMemoryUtilizationPercentage: 80
   nodeSelector:
     nodegroup: workload
   tolerations: []
@@ -269,17 +269,19 @@ coap:
     port: 8083
   resources:
     requests:
-      memory: "128Mi"
+      memory: "512Mi"
       cpu: "50m"
     limits:
-      memory: "256Mi"
+      memory: "1Gi"
       cpu: "250m"
+  env:
+    - name: JAVA_OPTS
+      value: "-Xms128M -Xmx256M"
   autoscaling:
     enabled: false
     minReplicas: 1
     maxReplicas: 100
     targetCPUUtilizationPercentage: 80
-    # targetMemoryUtilizationPercentage: 80
   nodeSelector:
     nodegroup: workload
   tolerations: []
@@ -319,7 +321,6 @@ webui:
     minReplicas: 2
     maxReplicas: 4
     targetCPUUtilizationPercentage: 75
-    targetMemoryUtilizationPercentage: 80
   nodeSelector:
     nodegroup: workload
   tolerations: []

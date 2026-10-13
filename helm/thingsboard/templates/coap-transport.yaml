@@ -72,6 +72,9 @@ spec:
             value: "{{ .Release.Name }}-kafka:{{ .Values.kafka.service.ports.client }}"
           - name: TB_QUEUE_KAFKA_REPLICATION_FACTOR
             value: "{{ .Values.kafka.offsetsTopicReplicationFactor }}"
+          {{- with .Values.coap.env }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
           volumeMounts:
             - mountPath: /config
               name: {{ .Release.Name }}-coap-transport-config
