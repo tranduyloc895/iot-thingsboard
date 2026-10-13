@@ -21,7 +21,7 @@ data:
       - name: Loki
         type: loki
         access: proxy
-        url: "http://{{ include "observability.fullname" . }}-loki:3100"
+        url: "http://{{ include "observability.fullname" . }}-loki.{{ .Release.Namespace }}.svc.cluster.local:3100"
         isDefault: false
         jsonData:
           maxLines: 1000

@@ -16,7 +16,7 @@ data:
       filename: /run/promtail/positions.yaml
 
     clients:
-      - url: http://{{ include "observability.fullname" . }}-loki:3100/loki/api/v1/push
+      - url: http://{{ include "observability.fullname" . }}-loki.{{ .Release.Namespace }}.svc.cluster.local:3100/loki/api/v1/push
         backoff_config:
           min_period: 500ms
           max_period: 5m
