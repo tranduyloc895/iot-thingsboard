@@ -25,7 +25,7 @@ spec:
   replicas: {{ .Values.node.replicaCount }}
 {{- end }}
 {{- if eq .Values.node.kind "StatefulSet" }}
-  serviceName: tb-node
+  serviceName: {{ .Release.Name }}-node
   podManagementPolicy: "Parallel"
 {{- end }}
   selector:
@@ -58,34 +58,53 @@ spec:
             name: http
           - containerPort: {{ .Values.node.port.rpc }}
             name: rpc
+          - containerPort: 1883
+            name: mqtt
           env:
           - name: TB_SERVICE_ID
             value: "tb-node"
           - name: TB_SERVICE_TYPE
             value: "monolith"
           - name: TB_QUEUE_TYPE
-            value: "kafka"
+            value: {{ .Values.node.queueType | quote }}
           - name: ZOOKEEPER_ENABLED
-            value: "true"
+            value: {{ .Values.node.zookeeperEnabled | quote }}
+          {{- if .Values.node.zookeeperEnabled }}
           - name: ZOOKEEPER_URL
             value: "{{ .Release.Name }}-zookeeper:{{ .Values.kafka.zookeeper.containerPorts.client }}"
+          {{- end }}
+          {{- if eq .Values.node.queueType "kafka" }}
           - name: TB_KAFKA_SERVERS
             value: "{{ .Release.Name }}-kafka:{{ .Values.kafka.service.ports.client }}"
           - name: TB_QUEUE_KAFKA_REPLICATION_FACTOR
             value: "{{ .Values.kafka.offsetsTopicReplicationFactor }}"
+          {{- end }}
           - name: JS_EVALUATOR
-            value: "remote"
+            value: {{ .Values.node.jsEvaluator | quote }}
           - name: HTTP_LOG_CONTROLLER_ERROR_STACK_TRACE
             value: "false"
           - name: CACHE_TYPE
             value: "redis"
+          {{- if not .Values.externalRedis.enabled }}
           - name: REDIS_HOST
             value: "{{ .Values.redis.fullnameOverride | default (printf "%s-redis-master" .Release.Name) }}"
           - name: REDIS_PASSWORD
             value: "{{ .Values.redis.auth.password }}"
+          {{- end }}
+          {{- with .Values.node.env }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
           envFrom:
           - configMapRef:
               name: {{ .Release.Name }}-node-db-config
+          {{- if .Values.externalDatabase.enabled }}
+          - secretRef:
+              name: {{ required "externalDatabase.existingSecret is required" .Values.externalDatabase.existingSecret }}
+          {{- end }}
+          {{- if .Values.externalRedis.enabled }}
+          - secretRef:
+              name: {{ required "externalRedis.existingSecret is required" .Values.externalRedis.existingSecret }}
+          {{- end }}
           volumeMounts:
             - mountPath: /config
               name: {{ .Release.Name }}-node-config
@@ -95,6 +114,12 @@ spec:
             httpGet:
               path: /login
               port: http
+          startupProbe:
+            httpGet:
+              path: /login
+              port: http
+            periodSeconds: 10
+            failureThreshold: 90
           livenessProbe:
             httpGet:
               path: /login

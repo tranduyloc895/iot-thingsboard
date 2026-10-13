@@ -43,6 +43,15 @@ spec:
     - host: {{ . | quote }}
       http:
          paths:
+          {{- if not $values.webui.enabled }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $releaseName }}-node
+                port:
+                  number: {{ $values.node.service.port }}
+          {{- else }}
           - path: /api/v1/.*
             pathType: ImplementationSpecific
             backend:
@@ -127,5 +136,6 @@ spec:
                 name: {{ $releaseName }}-webui
                 port:
                   number: {{ $values.webui.service.port }}
+          {{- end }}
     {{- end }}
 {{- end }}

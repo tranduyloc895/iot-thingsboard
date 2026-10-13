@@ -2804,11 +2804,8 @@ class ThingsBoardService:
         if self.jwt_token and time.time() < self.token_expiry:
             return self.jwt_token
 
-        urls_to_try = [
-            settings.THINGSBOARD_URL,
-            "http://thingsboard-node.thingsboard.svc.cluster.local:8080",
-            "http://10.0.0.225:8080"
-        ]
+        # Only connect to the endpoint configured for this environment.
+        urls_to_try = [settings.THINGSBOARD_URL]
 
         for base_url in urls_to_try:
             try:

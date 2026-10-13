@@ -92,7 +92,7 @@ flowchart TD
 ## 2. Chi tiết Luồng INBOUND (Traffic từ ngoài Internet đi vào)
 
 ### 📥 Luồng A: Thu nhận dữ liệu Cảm biến IoT (Sensor Data Ingestion)
-1. **Phát tín hiệu:** Trạm cảm biến đo ngập (hoặc script `scripts/mqtt_simulator.py`) gửi gói tin JSON qua giao thức **MQTT (Port 1883)**.
+1. **Phát tín hiệu:** Trạm cảm biến đo ngập (hoặc bộ giả lập trong thư mục `simulator/`) gửi gói tin JSON qua giao thức **MQTT (Port 1883)**.
 2. **Kiểm duyệt tại Tường lửa Biên (Palo Alto HA):**
    - Gói tin đến Public Elastic IP $\rightarrow$ vào `PA-FW1` (Active).
    - Firewall thực hiện: Chống tấn công DDoS/Flood, kiểm tra Application-ID (chỉ chấp nhận MQTT payload hợp lệ).

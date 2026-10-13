@@ -1,0 +1,35 @@
+# Environment image is explicit; CI only updates dev.
+autoscaling:
+  enabled: false
+  maxReplicas: 6
+  minReplicas: 2
+  targetCPUUtilizationPercentage: 70
+image:
+  digest: ''
+  pullPolicy: IfNotPresent
+  repository: ghcr.io/tranduyloc895/hcm-flood-frontend
+  tag: 6d9e2bd32bcaa6d8384195d417c1079db83c2cd7
+imagePullSecrets: []
+ingress:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  className: nginx
+  enabled: true
+  hosts:
+  - host: flood.dev.web-ui.com
+    paths:
+    - path: /
+      pathType: Prefix
+nodeSelector:
+  nodegroup: workload
+replicaCount: 1
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+service:
+  port: 80
+  type: ClusterIP

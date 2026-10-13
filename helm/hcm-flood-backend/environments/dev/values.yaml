@@ -1,0 +1,47 @@
+# Environment image is explicit; CI only updates dev.
+autoscaling:
+  enabled: false
+  maxReplicas: 6
+  minReplicas: 2
+  targetCPUUtilizationPercentage: 70
+env:
+  APP_ENV: development
+  PORT: '8000'
+  THINGSBOARD_URL: http://thingsboard-node.iot-dev.svc.cluster.local:8080
+envFrom:
+- secretRef:
+    name: thingsboard-api-credentials
+image:
+  digest: ''
+  pullPolicy: IfNotPresent
+  repository: ghcr.io/tranduyloc895/hcm-flood-backend
+  tag: 6d9e2bd32bcaa6d8384195d417c1079db83c2cd7
+imagePullSecrets: []
+ingress:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '3600'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '3600'
+    nginx.ingress.kubernetes.io/websocket-services: hcm-flood-backend
+  className: nginx
+  enabled: true
+  hosts:
+  - host: flood.dev.web-ui.com
+    paths:
+    - path: /api
+      pathType: Prefix
+    - path: /ws
+      pathType: Prefix
+nodeSelector:
+  nodegroup: workload
+replicaCount: 1
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+service:
+  port: 8000
+  type: ClusterIP

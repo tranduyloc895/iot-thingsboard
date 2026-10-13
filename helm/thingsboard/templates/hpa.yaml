@@ -22,7 +22,7 @@
 {{- range tuple "node" "mqtt" "http" "coap" "jsexecutor" "webui" -}}
   {{- $component := . -}}
   {{- $componentvalues := index $values $component -}}
-  {{- if and $componentvalues $componentvalues.autoscaling $componentvalues.autoscaling.enabled }}
+  {{- if and (or (eq $component "node") $componentvalues.enabled) $componentvalues.autoscaling $componentvalues.autoscaling.enabled }}
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

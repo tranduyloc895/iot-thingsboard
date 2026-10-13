@@ -27,5 +27,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: 1883
+      targetPort: mqtt
+      protocol: TCP
+      name: mqtt
   selector:
     {{- include "thingsboard.selectorLabels-node" . | nindent 4 }}

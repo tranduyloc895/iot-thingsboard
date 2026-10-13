@@ -27,5 +27,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "thingsboard.fullname" . }}:{{ .Values.node.service.port }}']
+      args: ['http://{{ .Release.Name }}-node:{{ .Values.node.service.port }}/login']
   restartPolicy: Never

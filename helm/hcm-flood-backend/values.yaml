@@ -2,6 +2,7 @@ replicaCount: 2
 
 image:
   repository: ghcr.io/tranduyloc895/hcm-flood-backend
+  digest: ""
   pullPolicy: IfNotPresent
   tag: "6d9e2bd32bcaa6d8384195d417c1079db83c2cd7"
 
@@ -48,3 +49,6 @@ ingress:
           pathType: Prefix
         - path: /ws
           pathType: Prefix
+
+# Credentials are injected from a namespace-local Kubernetes Secret.
+envFrom: []

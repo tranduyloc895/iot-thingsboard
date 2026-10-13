@@ -25,17 +25,24 @@ metadata:
     "helm.sh/hook": post-install
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
-  ttlSecondsAfterFinished: 0
+  # Retain failed jobs for diagnosis; successful jobs are removed by Helm.
+  ttlSecondsAfterFinished: 86400
   template:
     spec:
+      {{- with .Values.node.imagePullSecrets }}
       imagePullSecrets:
-        - name: dockerhub-secret
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 
       containers:
       - name: init-db
         envFrom:
         - configMapRef:
             name: '{{ .Release.Name }}-node-db-config'
+        {{- if .Values.externalDatabase.enabled }}
+        - secretRef:
+            name: {{ required "externalDatabase.existingSecret is required" .Values.externalDatabase.existingSecret }}
+        {{- end }}
         volumeMounts:
           - mountPath: /config
             name: '{{ .Release.Name }}-node-config'

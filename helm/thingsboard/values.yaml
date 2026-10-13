@@ -28,6 +28,17 @@ global:
 nameOverride: ""
 fullnameOverride: ""
 
+# The referenced Secrets are created outside Helm and never stored in Git.
+# DB Secret: SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD.
+externalDatabase:
+  enabled: false
+  existingSecret: ""
+
+# Redis Secret: REDIS_HOST, REDIS_PORT, REDIS_DB, REDIS_PASSWORD, TB_REDIS_SSL_ENABLED.
+externalRedis:
+  enabled: false
+  existingSecret: ""
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -50,6 +61,9 @@ ingress:
   
 
 node:
+  queueType: kafka
+  zookeeperEnabled: true
+  jsEvaluator: remote
   # kind can be either Deployment or StatefulSet
   kind: StatefulSet
   initDb: false
@@ -101,6 +115,7 @@ node:
   affinity: {}
 
 jsexecutor:
+  enabled: true
   # kind can be either Deployment or StatefulSet
   kind: Deployment
   imagePullSecrets:
@@ -141,6 +156,7 @@ jsexecutor:
             topologyKey: kubernetes.io/hostname
 
 mqtt:
+  enabled: true
   # kind can be either Deployment or StatefulSet
   kind: StatefulSet
   imagePullSecrets:
@@ -195,6 +211,7 @@ mqtt:
             topologyKey: kubernetes.io/hostname
 
 http:
+  enabled: true
   # kind can be either Deployment or StatefulSet
   kind: StatefulSet
   imagePullSecrets:
@@ -246,6 +263,7 @@ http:
             topologyKey: kubernetes.io/hostname
 
 coap:
+  enabled: true
   # kind can be either Deployment or StatefulSet
   kind: StatefulSet
   imagePullSecrets:
@@ -289,6 +307,7 @@ coap:
   affinity: {}
 
 webui:
+  enabled: true
   # kind can be either Deployment or StatefulSet
   kind: Deployment
   imagePullSecrets:
@@ -365,6 +384,7 @@ postgresql-ha:
 
 
 redis:
+  enabled: true
   image:
     registry: docker.io
     repository: bitnami/redis
@@ -394,6 +414,7 @@ redis:
       enabled: false
 
 kafka:
+  enabled: true
   image:
     registry: docker.io
     repository: bitnamilegacy/kafka

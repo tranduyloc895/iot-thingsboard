@@ -1,0 +1,366 @@
+# CMC endpoints and credentials come from namespace-local Secrets.
+# Version follows the existing Helm chart (3.4.0); do not use this for a newer DB.
+cassandra:
+  dbUser:
+    password: setplease
+  enabled: false
+  replicaCount: 1
+cassandraInitDB:
+  keyspace: thingsboard
+  replication:
+    class: SimpleStrategy
+    factor: 1
+coap:
+  affinity: {}
+  autoscaling:
+    enabled: false
+    maxReplicas: 100
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 80
+  enabled: true
+  env:
+  - name: JAVA_OPTS
+    value: -Xms256M -Xmx512M
+  image:
+    repository: thingsboard/tb-coap-transport
+  imagePullSecrets:
+  - name: dockerhub-secret
+  kind: StatefulSet
+  nodeSelector:
+    nodegroup: workload
+  podAnnotations: {}
+  podSecurityContext: {}
+  port:
+    name: coap
+    number: 8083
+    protocol: UDP
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 1Gi
+    requests:
+      cpu: 50m
+      memory: 512Mi
+  securityContext: {}
+  service:
+    port: 8083
+    type: ClusterIP
+  timeout: 10000
+  tolerations: []
+externalDatabase:
+  enabled: true
+  existingSecret: thingsboard-postgresql
+externalRedis:
+  enabled: true
+  existingSecret: thingsboard-redis
+fullnameOverride: ''
+global:
+  image:
+    pullPolicy: IfNotPresent
+    pullSecrets:
+    - name: dockerhub-secret
+    server: docker.io
+    tag: 3.4.0
+  imagePullSecrets:
+  - dockerhub-secret
+  jsonLogs: false
+http:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tb-http-transport
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  autoscaling:
+    enabled: true
+    maxReplicas: 4
+    minReplicas: 2
+    targetCPUUtilizationPercentage: 70
+  enabled: true
+  env:
+  - name: JAVA_OPTS
+    value: -Xms256M -Xmx512M
+  image:
+    repository: thingsboard/tb-http-transport
+  imagePullSecrets:
+  - name: dockerhub-secret
+  kind: StatefulSet
+  nodeSelector:
+    nodegroup: workload
+  podAnnotations: {}
+  podSecurityContext: {}
+  port:
+    name: http
+    number: 8082
+    protocol: TCP
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+  securityContext: {}
+  service:
+    port: 8082
+    type: ClusterIP
+  timeout: 10000
+  tolerations: []
+ingress:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: '0'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+  enabled: true
+  hosts:
+  - thingsboard.web-ui.com
+  tls: false
+jsexecutor:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tb-js-executor
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  autoscaling:
+    enabled: true
+    maxReplicas: 6
+    minReplicas: 2
+    targetCPUUtilizationPercentage: 70
+  enabled: true
+  image:
+    repository: thingsboard/tb-js-executor
+  imagePullSecrets:
+  - name: dockerhub-secret
+  kind: Deployment
+  nodeSelector:
+    nodegroup: workload
+  podAnnotations: {}
+  podSecurityContext: {}
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  securityContext: {}
+  tolerations: []
+kafka:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/kafka
+    tag: 3.3.2
+  nodeSelector:
+    nodegroup: workload
+  persistence:
+    enabled: false
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  zookeeper:
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/zookeeper
+      tag: 3.9.3-debian-12-r22
+    nodeSelector:
+      nodegroup: workload
+    persistence:
+      enabled: false
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+mqtt:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tb-mqtt-transport
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  autoscaling:
+    enabled: true
+    maxReplicas: 6
+    minReplicas: 2
+    targetCPUUtilizationPercentage: 70
+  enabled: true
+  env:
+  - name: JAVA_OPTS
+    value: -Xms256M -Xmx512M
+  image:
+    repository: thingsboard/tb-mqtt-transport
+  imagePullSecrets:
+  - name: dockerhub-secret
+  kind: StatefulSet
+  nodeSelector:
+    nodegroup: workload
+  podAnnotations: {}
+  podSecurityContext: {}
+  port:
+    name: mqtt
+    number: 8081
+    protocol: TCP
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+  securityContext: {}
+  service:
+    port: 8883
+    type: ClusterIP
+  ssl:
+    enabled: false
+    secret: kubernetes-secret
+  timeout: 10000
+  tolerations: []
+nameOverride: ''
+node:
+  affinity: {}
+  autoscaling:
+    enabled: false
+    maxReplicas: 100
+    minReplicas: 1
+    targetCPUUtilizationPercentage: 80
+  env:
+  - name: JAVA_OPTS
+    value: -Xms2G -Xmx2G
+  image:
+    repository: thingsboard/tb-node
+  imagePullSecrets:
+  - name: dockerhub-secret
+  initDb: false
+  jsEvaluator: remote
+  kind: StatefulSet
+  loadDemo: false
+  nodeSelector:
+    nodegroup: workload
+  podAnnotations: {}
+  podSecurityContext: {}
+  port:
+    http: 8080
+    rpc: 9090
+  queueType: kafka
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+  securityContext: {}
+  service:
+    port: 8080
+    type: ClusterIP
+  tolerations: []
+  zookeeperEnabled: true
+postgresql-ha:
+  enabled: false
+  nameOverride: pg
+  pgpool:
+    containerPort: 5432
+    fullnameOverride: <REPLACE_IP_IN_DEVTRON_UI>
+    replicaCount: 0
+  postgresql:
+    database: iot_thingsboard
+    password: ''
+    replicaCount: 0
+    username: iot_thingsboard
+redis:
+  architecture: standalone
+  auth:
+    password: ''
+  enabled: false
+  image:
+    registry: docker.io
+    repository: bitnami/redis
+    tag: latest
+  master:
+    disableCommands:
+    - FLUSHALL
+    kind: Deployment
+    nodeSelector:
+      nodegroup: workload
+    persistence:
+      enabled: false
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+  replica:
+    persistence:
+      enabled: false
+    replicaCount: 0
+serviceAccount:
+  annotations: {}
+  create: true
+  name: ''
+webui:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tb-web-ui
+          topologyKey: kubernetes.io/hostname
+        weight: 100
+  autoscaling:
+    enabled: true
+    maxReplicas: 4
+    minReplicas: 2
+    targetCPUUtilizationPercentage: 75
+  enabled: true
+  image:
+    repository: thingsboard/tb-web-ui
+  imagePullSecrets:
+  - name: dockerhub-secret
+  kind: Deployment
+  nodeSelector:
+    nodegroup: workload
+  podAnnotations: {}
+  podSecurityContext: {}
+  port:
+    name: http
+    number: 8084
+    protocol: TCP
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  securityContext: {}
+  service:
+    port: 8084
+    type: ClusterIP
+  tolerations: []

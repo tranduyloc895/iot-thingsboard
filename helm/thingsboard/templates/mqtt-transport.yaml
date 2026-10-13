@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+{{- if .Values.mqtt.enabled }}
 apiVersion: apps/v1
 kind: {{ .Values.mqtt.kind }}
 metadata:
@@ -142,3 +143,5 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
+{{- end }}

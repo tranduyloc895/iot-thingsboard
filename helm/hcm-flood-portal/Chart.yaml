@@ -1,6 +1,0 @@
-apiVersion: v2
-name: hcm-flood-portal
-description: Helm Chart cho Website Cảnh báo ngập lụt TP.HCM (Frontend React & Backend Integration Service)
-type: application
-version: 0.1.0
-appVersion: "1.0.0"
