@@ -21,8 +21,8 @@ data:
             "name": "node",
             "type": "query",
             "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
-            "definition": "label_values(kube_node_info, node)",
-            "query": "label_values(kube_node_info, node)",
+            "definition": "label_values(node_cpu_seconds_total, node_name)",
+            "query": "label_values(node_cpu_seconds_total, node_name)",
             "includeAll": true,
             "allValue": ".*",
             "current": { "text": "All", "value": "$__all" },
@@ -91,7 +91,7 @@ data:
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
           "targets": [
-            { "expr": "(100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)) * on(instance) group_left(node) (label_replace(kube_node_info{node=~\"$node\"}, \"instance\", \"$1:9100\", \"internal_ip\", \"(.+)\") or label_replace(kube_node_info{node=~\"$node\"}, \"instance\", \"$1\", \"internal_ip\", \"(.+)\"))", "legendFormat": "{{ `{{node}}` }}", "refId": "A" }
+            { "expr": "100 - (avg by (node_name) (rate(node_cpu_seconds_total{mode=\"idle\",node_name=~\"$node\"}[5m])) * 100)", "legendFormat": "{{ `{{node_name}}` }}", "refId": "A" }
           ],
           "fieldConfig": { "defaults": { "unit": "percent", "custom": { "fillOpacity": 15, "lineWidth": 2 } } }
         },
@@ -102,7 +102,7 @@ data:
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
           "targets": [
-            { "expr": "((1 - (sum by (instance) (node_memory_MemAvailable_bytes) / sum by (instance) (node_memory_MemTotal_bytes))) * 100) * on(instance) group_left(node) (label_replace(kube_node_info{node=~\"$node\"}, \"instance\", \"$1:9100\", \"internal_ip\", \"(.+)\") or label_replace(kube_node_info{node=~\"$node\"}, \"instance\", \"$1\", \"internal_ip\", \"(.+)\"))", "legendFormat": "{{ `{{node}}` }}", "refId": "A" }
+            { "expr": "(1 - (sum by (node_name) (node_memory_MemAvailable_bytes{node_name=~\"$node\"}) / sum by (node_name) (node_memory_MemTotal_bytes{node_name=~\"$node\"}))) * 100", "legendFormat": "{{ `{{node_name}}` }}", "refId": "A" }
           ],
           "fieldConfig": { "defaults": { "unit": "percent", "custom": { "fillOpacity": 15, "lineWidth": 2 } } }
         },
@@ -113,8 +113,8 @@ data:
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
           "targets": [
-            { "expr": "(sum by (instance) (rate(node_network_receive_bytes_total{device!~\"lo|veth.*|cali.*\"}[5m])) / 1024 / 1024) * on(instance) group_left(node) (label_replace(kube_node_info{node=~\"$node\"}, \"instance\", \"$1:9100\", \"internal_ip\", \"(.+)\") or label_replace(kube_node_info{node=~\"$node\"}, \"instance\", \"$1\", \"internal_ip\", \"(.+)\"))", "legendFormat": "In: {{ `{{node}}` }}", "refId": "A" },
-            { "expr": "(sum by (instance) (rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|cali.*\"}[5m])) / 1024 / 1024) * on(instance) group_left(node) (label_replace(kube_node_info{node=~\"$node\"}, \"instance\", \"$1:9100\", \"internal_ip\", \"(.+)\") or label_replace(kube_node_info{node=~\"$node\"}, \"instance\", \"$1\", \"internal_ip\", \"(.+)\"))", "legendFormat": "Out: {{ `{{node}}` }}", "refId": "B" }
+            { "expr": "sum by (node_name) (rate(node_network_receive_bytes_total{node_name=~\"$node\",device!~\"lo|veth.*|cali.*\"}[5m])) / 1024 / 1024", "legendFormat": "In: {{ `{{node_name}}` }}", "refId": "A" },
+            { "expr": "sum by (node_name) (rate(node_network_transmit_bytes_total{node_name=~\"$node\",device!~\"lo|veth.*|cali.*\"}[5m])) / 1024 / 1024", "legendFormat": "Out: {{ `{{node_name}}` }}", "refId": "B" }
           ],
           "fieldConfig": { "defaults": { "unit": "MBs", "custom": { "lineWidth": 1.5 } } }
         }
