@@ -21,13 +21,13 @@ data:
             "name": "node",
             "type": "query",
             "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
-            "definition": "label_values(node_cpu_seconds_total, instance)",
-            "query": "label_values(node_cpu_seconds_total, instance)",
+            "definition": "label_values(node_uname_info, nodename)",
+            "query": "label_values(node_uname_info, nodename)",
             "includeAll": true,
             "allValue": ".*",
             "current": { "text": "All", "value": "$__all" },
             "multi": true,
-            "label": "Instance / Node"
+            "label": "Node Name"
           }
         ]
       },
@@ -91,7 +91,7 @@ data:
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
           "targets": [
-            { "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=~\"$node.*\"}[5m])) * 100)", "legendFormat": "{{ `{{instance}}` }}", "refId": "A" }
+            { "expr": "(100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)) * on(instance) group_left(nodename) (node_uname_info{nodename=~\"$node\"})", "legendFormat": "{{ `{{nodename}}` }}", "refId": "A" }
           ],
           "fieldConfig": { "defaults": { "unit": "percent", "custom": { "fillOpacity": 15, "lineWidth": 2 } } }
         },
@@ -102,7 +102,7 @@ data:
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
           "targets": [
-            { "expr": "(1 - (node_memory_MemAvailable_bytes{instance=~\"$node.*\"} / node_memory_MemTotal_bytes{instance=~\"$node.*\"})) * 100", "legendFormat": "{{ `{{instance}}` }}", "refId": "A" }
+            { "expr": "((1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100) * on(instance) group_left(nodename) (node_uname_info{nodename=~\"$node\"})", "legendFormat": "{{ `{{nodename}}` }}", "refId": "A" }
           ],
           "fieldConfig": { "defaults": { "unit": "percent", "custom": { "fillOpacity": 15, "lineWidth": 2 } } }
         },
@@ -113,8 +113,8 @@ data:
           "type": "timeseries",
           "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
           "targets": [
-            { "expr": "sum by (instance) (rate(node_network_receive_bytes_total{instance=~\"$node.*\",device!~\"lo|veth.*\"}[5m])) / 1024 / 1024", "legendFormat": "In: {{ `{{instance}}` }}", "refId": "A" },
-            { "expr": "sum by (instance) (rate(node_network_transmit_bytes_total{instance=~\"$node.*\",device!~\"lo|veth.*\"}[5m])) / 1024 / 1024", "legendFormat": "Out: {{ `{{instance}}` }}", "refId": "B" }
+            { "expr": "(sum by (instance) (rate(node_network_receive_bytes_total{device!~\"lo|veth.*\"}[5m])) / 1024 / 1024) * on(instance) group_left(nodename) (node_uname_info{nodename=~\"$node\"})", "legendFormat": "In: {{ `{{nodename}}` }}", "refId": "A" },
+            { "expr": "(sum by (instance) (rate(node_network_transmit_bytes_total{device!~\"lo|veth.*\"}[5m])) / 1024 / 1024) * on(instance) group_left(nodename) (node_uname_info{nodename=~\"$node\"})", "legendFormat": "Out: {{ `{{nodename}}` }}", "refId": "B" }
           ],
           "fieldConfig": { "defaults": { "unit": "MBs", "custom": { "lineWidth": 1.5 } } }
         }
@@ -141,7 +141,7 @@ data:
             "definition": "label_values(kube_pod_info, namespace)",
             "query": "label_values(kube_pod_info, namespace)",
             "includeAll": true,
-            "allValue": ".*",
+            "allValue": ".+",
             "current": { "text": "All", "value": "$__all" },
             "multi": true,
             "label": "Namespace"
@@ -153,7 +153,7 @@ data:
             "definition": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)",
             "query": "label_values(kube_pod_info{namespace=~\"$namespace\"}, pod)",
             "includeAll": true,
-            "allValue": ".*",
+            "allValue": ".+",
             "current": { "text": "All", "value": "$__all" },
             "multi": true,
             "label": "Pod"
@@ -234,7 +234,7 @@ data:
           "type": "logs",
           "datasource": { "type": "loki", "uid": "Loki" },
           "targets": [
-            { "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"}", "refId": "A" }
+            { "expr": "{job=\"kubernetes-pods\", namespace=~\"$namespace\", pod=~\"$pod\"}", "refId": "A" }
           ],
           "options": {
             "showLabels": true,
@@ -347,7 +347,7 @@ data:
           "type": "logs",
           "datasource": { "type": "loki", "uid": "Loki" },
           "targets": [
-            { "expr": "{namespace=~\"$namespace\"}", "refId": "A" }
+            { "expr": "{job=\"kubernetes-pods\", namespace=~\"$namespace\"}", "refId": "A" }
           ],
           "options": {
             "showLabels": true,
