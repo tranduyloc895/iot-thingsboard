@@ -52,6 +52,7 @@ ingress:
 node:
   # kind can be either Deployment or StatefulSet
   kind: StatefulSet
+  initDb: false
   loadDemo: false
   replicaCount: 1
   imagePullSecrets:
@@ -276,7 +277,7 @@ coap:
       cpu: "250m"
   env:
     - name: JAVA_OPTS
-      value: "-Xms128M -Xmx256M"
+      value: "-Xms256M -Xmx512M"
   autoscaling:
     enabled: false
     minReplicas: 1

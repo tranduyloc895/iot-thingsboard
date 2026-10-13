@@ -14,12 +14,16 @@
 # limitations under the License.
 #
 
+{{- if .Values.node.initDb }}
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: '{{ .Release.Name }}-init-tb-db'
   labels:
     {{- include "thingsboard.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   ttlSecondsAfterFinished: 0
   template:
@@ -56,3 +60,4 @@ spec:
               path: thingsboard.conf
             - key: logback
               path: logback.xml
+{{- end }}
