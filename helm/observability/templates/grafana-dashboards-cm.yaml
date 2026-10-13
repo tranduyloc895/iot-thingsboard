@@ -21,13 +21,13 @@ data:
             "name": "node",
             "type": "query",
             "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
-            "definition": "label_values(node_uname_info, nodename) or label_values(kube_node_info, node)",
-            "query": "label_values(node_uname_info, nodename) or label_values(kube_node_info, node)",
+            "definition": "label_values(node_cpu_seconds_total, instance)",
+            "query": "label_values(node_cpu_seconds_total, instance)",
             "includeAll": true,
             "allValue": ".*",
             "current": { "text": "All", "value": "$__all" },
             "multi": true,
-            "label": "Node Filter"
+            "label": "Instance / Node"
           }
         ]
       },
@@ -157,12 +157,6 @@ data:
             "current": { "text": "All", "value": "$__all" },
             "multi": true,
             "label": "Pod"
-          },
-          {
-            "name": "search",
-            "type": "textbox",
-            "label": "Filter Keyword",
-            "current": { "text": "", "value": "" }
           }
         ]
       },
@@ -240,7 +234,7 @@ data:
           "type": "logs",
           "datasource": { "type": "loki", "uid": "Loki" },
           "targets": [
-            { "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"} |= \"$search\"", "refId": "A" }
+            { "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"}", "refId": "A" }
           ],
           "options": {
             "showLabels": true,
@@ -276,12 +270,6 @@ data:
             ],
             "current": { "text": "All", "value": "thingsboard|flood-portal" },
             "label": "App Layer"
-          },
-          {
-            "name": "search",
-            "type": "textbox",
-            "label": "Search Keyword / Error",
-            "current": { "text": "", "value": "" }
           }
         ]
       },
@@ -359,7 +347,7 @@ data:
           "type": "logs",
           "datasource": { "type": "loki", "uid": "Loki" },
           "targets": [
-            { "expr": "{namespace=~\"$namespace\"} |= \"$search\"", "refId": "A" }
+            { "expr": "{namespace=~\"$namespace\"}", "refId": "A" }
           ],
           "options": {
             "showLabels": true,

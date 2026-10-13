@@ -30,6 +30,12 @@ spec:
           imagePullPolicy: {{ .Values.promtail.image.pullPolicy }}
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
+            - "-config.expand-env=true"
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           ports:
             - name: http-metrics
               containerPort: 9080
