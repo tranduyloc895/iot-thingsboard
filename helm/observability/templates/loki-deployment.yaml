@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "observability.fullname" . }}-loki
+  labels:
+    app.kubernetes.io/component: loki
+    {{- include "observability.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: loki
+      {{- include "observability.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: loki
+        {{- include "observability.selectorLabels" . | nindent 8 }}
+    spec:
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector.system | nindent 8 }}
+      containers:
+        - name: loki
+          image: "{{ .Values.loki.image.repository }}:{{ .Values.loki.image.tag }}"
+          imagePullPolicy: {{ .Values.loki.image.pullPolicy }}
+          args:
+            - "-config.file=/etc/loki/loki.yaml"
+            - "-config.expand-env=true"
+          ports:
+            - name: http-metrics
+              containerPort: 3100
+              protocol: TCP
+          {{- if .Values.loki.s3.enabled }}
+          env:
+            - name: S3_ENDPOINT
+              value: {{ .Values.loki.s3.endpoint | quote }}
+            - name: S3_BUCKET
+              value: {{ .Values.loki.s3.bucket | quote }}
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-s3-secret" (include "observability.fullname" .)) .Values.loki.s3.secret.name }}
+                  key: access-key
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-s3-secret" (include "observability.fullname" .)) .Values.loki.s3.secret.name }}
+                  key: secret-key
+          {{- end }}
+          resources:
+            {{- toYaml .Values.loki.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 15
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            initialDelaySeconds: 30
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: config
+              mountPath: /etc/loki
+            - name: data
+              mountPath: /var/loki
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "observability.fullname" . }}-loki-config
+        - name: data
+          emptyDir: {}

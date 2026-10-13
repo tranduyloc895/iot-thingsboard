@@ -1,0 +1,305 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "observability.fullname" . }}-grafana-dashboards
+  labels:
+    app.kubernetes.io/component: grafana
+    {{- include "observability.labels" . | nindent 4 }}
+data:
+  01-cluster-nodes-health.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "id": 1,
+          "title": "Total Nodes",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum(kube_node_info)", "refId": "A" }
+          ],
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }
+          }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "id": 2,
+          "title": "Nodes Ready",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})", "refId": "A" }
+          ],
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } }
+          }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "id": 3,
+          "title": "Cluster CPU Usage Avg",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "refId": "A" }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "percent", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 70 }, { "color": "red", "value": 85 }] } }
+          }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "id": 4,
+          "title": "Cluster RAM Usage Avg",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "(1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100", "refId": "A" }
+          ],
+          "fieldConfig": {
+            "defaults": { "unit": "percent", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 75 }, { "color": "red", "value": 90 }] } }
+          }
+        },
+        {
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "id": 5,
+          "title": "Node CPU Utilization (%)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{ `{{instance}}` }}", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percent", "custom": { "fillOpacity": 15, "lineWidth": 2 } } }
+        },
+        {
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "id": 6,
+          "title": "Node Memory Utilization (%)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "legendFormat": "{{ `{{instance}}` }}", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percent", "custom": { "fillOpacity": 15, "lineWidth": 2 } } }
+        },
+        {
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+          "id": 7,
+          "title": "Node Network Traffic (MB/s)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum by (instance) (rate(node_network_receive_bytes_total{device!~\"lo|veth.*\"}[5m])) / 1024 / 1024", "legendFormat": "In: {{ `{{instance}}` }}", "refId": "A" },
+            { "expr": "sum by (instance) (rate(node_network_transmit_bytes_total{device!~\"lo|veth.*\"}[5m])) / 1024 / 1024", "legendFormat": "Out: {{ `{{instance}}` }}", "refId": "B" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "MBs", "custom": { "lineWidth": 1.5 } } }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["cmc-k8s", "nodes"],
+      "title": "01. CMC K8s - Cluster & Nodes Health",
+      "refresh": "10s",
+      "time": { "from": "now-1h", "to": "now" }
+    }
+
+  02-workloads-pods.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "graphTooltip": 1,
+      "id": null,
+      "panels": [
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "id": 1,
+          "title": "Pods Running",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum(kube_pod_status_phase{phase=\"Running\"})", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "id": 2,
+          "title": "Pods Pending / Failed",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum(kube_pod_status_phase{phase=~\"Pending|Failed\"})", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "id": 3,
+          "title": "Pod Restarts (Past 1h)",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum(increase(kube_pod_container_status_restarts_total[1h]))", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 2 }, { "color": "red", "value": 5 }] } } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "id": 4,
+          "title": "Flood & ThingsBoard Pods",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "count(kube_pod_info{namespace=~\"thingsboard|flood-portal\"})", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } }
+        },
+        {
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "id": 5,
+          "title": "Top Pods CPU Usage (Cores)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "topk(8, sum by (pod, namespace) (rate(container_cpu_usage_seconds_total{container!=\"\",container!=\"POD\"}[5m])))", "legendFormat": "{{ `{{namespace}}/{{pod}}` }}", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "cores", "custom": { "fillOpacity": 10, "lineWidth": 1.5 } } }
+        },
+        {
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "id": 6,
+          "title": "Top Pods Memory Working Set (MB)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "topk(8, sum by (pod, namespace) (container_memory_working_set_bytes{container!=\"\",container!=\"POD\"})) / 1024 / 1024", "legendFormat": "{{ `{{namespace}}/{{pod}}` }}", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "decbytes", "custom": { "fillOpacity": 10, "lineWidth": 1.5 } } }
+        },
+        {
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
+          "id": 7,
+          "title": "Live Pod Logs Stream (Audit Via Loki)",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "Loki" },
+          "targets": [
+            { "expr": "{namespace=~\"thingsboard|flood-portal|ingress-nginx\"}", "refId": "A" }
+          ],
+          "options": {
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "sortOrder": "Descending"
+          }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["cmc-k8s", "workloads", "logs"],
+      "title": "02. CMC K8s - Workloads & Pods Health + Logs",
+      "refresh": "10s",
+      "time": { "from": "now-1h", "to": "now" }
+    }
+
+  03-hcm-flood-iot.json: |
+    {
+      "annotations": { "list": [] },
+      "editable": true,
+      "graphTooltip": 1,
+      "id": null,
+      "panels": [
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "id": 1,
+          "title": "ThingsBoard Nodes",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum(kube_pod_status_phase{namespace=\"thingsboard\",phase=\"Running\"})", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "id": 2,
+          "title": "Flood Backend Replicas",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum(kube_deployment_status_replicas_available{namespace=\"flood-portal\",deployment=~\"hcm-flood-backend.*\"}) or count(kube_pod_info{namespace=\"flood-portal\",pod=~\"hcm-flood-backend.*\"})", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "id": 3,
+          "title": "Flood Frontend Replicas",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum(kube_deployment_status_replicas_available{namespace=\"flood-portal\",deployment=~\"hcm-flood-frontend.*\"}) or count(kube_pod_info{namespace=\"flood-portal\",pod=~\"hcm-flood-frontend.*\"})", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } }
+        },
+        {
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "id": 4,
+          "title": "Simulator Status",
+          "type": "stat",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "count(kube_pod_status_phase{pod=~\"simulator.*\",phase=\"Running\"}) or vector(1)", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } }
+        },
+        {
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "id": 5,
+          "title": "ThingsBoard Stack RAM (MB)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"thingsboard\",container!=\"\",container!=\"POD\"}) / 1024 / 1024", "legendFormat": "{{ `{{pod}}` }}", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "decbytes", "custom": { "fillOpacity": 15, "lineWidth": 1.5 } } }
+        },
+        {
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "id": 6,
+          "title": "Flood Portal Backend/Frontend RAM (MB)",
+          "type": "timeseries",
+          "datasource": { "type": "prometheus", "uid": "CMC-Prometheus" },
+          "targets": [
+            { "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"flood-portal\",container!=\"\",container!=\"POD\"}) / 1024 / 1024", "legendFormat": "{{ `{{pod}}` }}", "refId": "A" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "decbytes", "custom": { "fillOpacity": 15, "lineWidth": 1.5 } } }
+        },
+        {
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 12 },
+          "id": 7,
+          "title": "Audit Logs: Exceptions & Errors Across IoT System",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "Loki" },
+          "targets": [
+            { "expr": "{namespace=~\"thingsboard|flood-portal\"} |= \"ERROR\" or {namespace=~\"thingsboard|flood-portal\"} |= \"Exception\"", "refId": "A" }
+          ],
+          "options": {
+            "showLabels": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "sortOrder": "Descending"
+          }
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["iot", "thingsboard", "flood"],
+      "title": "03. HCM Flood IoT & ThingsBoard Performance",
+      "refresh": "10s",
+      "time": { "from": "now-1h", "to": "now" }
+    }
