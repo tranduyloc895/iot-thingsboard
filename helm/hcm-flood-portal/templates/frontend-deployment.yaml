@@ -7,7 +7,9 @@ metadata:
     app.kubernetes.io/name: hcm-flood-frontend
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+{{- if not (and .Values.frontend.autoscaling .Values.frontend.autoscaling.enabled) }}
   replicas: {{ .Values.frontend.replicaCount }}
+{{- end }}
   selector:
     matchLabels:
       app.kubernetes.io/name: hcm-flood-frontend
@@ -26,6 +28,14 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: hcm-flood-frontend
+              app.kubernetes.io/instance: {{ .Release.Name }}
       containers:
         - name: frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"

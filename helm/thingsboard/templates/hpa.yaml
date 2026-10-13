@@ -18,21 +18,23 @@
 {{- $fullname := include "thingsboard.fullname" . -}}
 {{- $releaseName := .Release.Name -}}
 {{- $labels := include "thingsboard.labels" . -}}
-{{- range tuple "node" "mqtt" "http" "coap" "jsexecutor" -}}
+{{- $componentNameMap := dict "node" "node" "mqtt" "mqtt-transport" "http" "http-transport" "coap" "coap-transport" "jsexecutor" "jsexecutor" "webui" "web-ui" -}}
+{{- range tuple "node" "mqtt" "http" "coap" "jsexecutor" "webui" -}}
   {{- $component := . -}}
   {{- $componentvalues := index $values $component -}}
-  {{- if $componentvalues.autoscaling.enabled }}
-apiVersion: autoscaling/v2beta1
+  {{- if and $componentvalues $componentvalues.autoscaling $componentvalues.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ $releaseName }}-{{ $component }}
+  name: {{ $releaseName }}-{{ index $componentNameMap $component }}
   labels:
-      {{- $labels | nindent 4 }}
+    {{- $labels | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: {{ $componentvalues.kind }}
-    name: {{ $releaseName }}-{{ $component }}
+    name: {{ $releaseName }}-{{ index $componentNameMap $component }}
   minReplicas: {{ $componentvalues.autoscaling.minReplicas }}
   maxReplicas: {{ $componentvalues.autoscaling.maxReplicas }}
   metrics:
@@ -40,14 +42,17 @@ spec:
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: {{ $componentvalues.autoscaling.targetCPUUtilizationPercentage }}
+        target:
+          type: Utilization
+          averageUtilization: {{ $componentvalues.autoscaling.targetCPUUtilizationPercentage }}
     {{- end }}
     {{- if $componentvalues.autoscaling.targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: memory
-        targetAverageUtilization: {{ $componentvalues.autoscaling.targetMemoryUtilizationPercentage }}
+        target:
+          type: Utilization
+          averageUtilization: {{ $componentvalues.autoscaling.targetMemoryUtilizationPercentage }}
     {{- end }}
   {{- end }}
----
 {{- end }}
