@@ -1,6 +1,12 @@
 from typing import List, Optional
 from pydantic import BaseModel
 
+class WeatherData(BaseModel):
+    temperature_c: float
+    humidity_percent: float
+    rainfall_mm: float
+    source: str = "Open-Meteo Live API"
+
 class DeviceTelemetry(BaseModel):
     device_id: str
     name: str
@@ -91,3 +97,4 @@ class DashboardData(BaseModel):
     devices: List[DeviceTelemetry]
     roads: List[FloodedRoad] = []
     zones: List[FloodZone] = []
+    weather: Optional[WeatherData] = None

@@ -29,7 +29,7 @@ const SEVERITY_COLORS = {
   }
 };
 
-export default function Sidebar({ tides = [], severeLocations = [], roads = [], zones = [], summary, onSelectLocation }) {
+export default function Sidebar({ tides = [], severeLocations = [], roads = [], zones = [], summary, weather, onSelectLocation }) {
   const [selectedStationIdx, setSelectedStationIdx] = useState(0);
   const [showAllCharts, setShowAllCharts] = useState(false);
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL', 'ROADS', 'ZONES'
@@ -54,6 +54,20 @@ export default function Sidebar({ tides = [], severeLocations = [], roads = [], 
   };
 
   const activeStation = tides && tides.length > 0 ? (tides[selectedStationIdx] || tides[0]) : null;
+
+  // Tóm tắt triều cường toàn thành phố
+  const maxTide = tides.length > 0 ? Math.max(...tides.map(t => t.current_level)) : 0;
+  const maxTideStation = tides.find(t => t.current_level === maxTide) || null;
+  const cityTideAlert = maxTide >= 1.7
+    ? { label: 'BĐ III + Xả lũ', color: '#ff0055', bg: 'rgba(255,0,85,0.18)' }
+    : maxTide >= 1.5
+      ? { label: 'Báo động III', color: '#f43f5e', bg: 'rgba(244,63,94,0.15)' }
+      : maxTide >= 1.35
+        ? { label: 'Báo động II', color: '#fb923c', bg: 'rgba(251,146,60,0.14)' }
+        : maxTide >= 1.1
+          ? { label: 'Báo động I', color: '#facc15', bg: 'rgba(250,204,21,0.13)' }
+          : { label: 'Bình thường', color: '#10b981', bg: 'rgba(16,185,129,0.12)' };
+  const rainfall_mm = weather?.rainfall_mm ?? null;
 
   return (
     <aside style={{
@@ -95,13 +109,13 @@ export default function Sidebar({ tides = [], severeLocations = [], roads = [], 
         </div>
       </div>
 
-      {/* Section: 10 Hydrological Charts */}
+      {/* Section: Dự báo Triều cường */}
       <div style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Activity size={14} color="#38bdf8" />
             <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', color: '#cbd5e1', textTransform: 'uppercase' }}>
-              Biểu đồ thủy văn ({tides?.length || 10})
+              Dự báo Triều cường TP.HCM
             </h2>
           </div>
           <button 
@@ -126,7 +140,71 @@ export default function Sidebar({ tides = [], severeLocations = [], roads = [], 
           </button>
         </div>
 
-        {/* Thanh cuộn chọn nhanh 10 trạm */}
+        {/* ── City Tide Summary Card ── */}
+        {tides.length > 0 && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '6px',
+            marginBottom: '10px',
+            padding: '10px 12px',
+            background: `${cityTideAlert.color}10`,
+            border: `1px solid ${cityTideAlert.color}30`,
+            borderRadius: '12px'
+          }}>
+            {/* Mực triều cao nhất */}
+            <div>
+              <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
+                🌊 Mực triều cao nhất
+              </div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: cityTideAlert.color, fontFamily: 'Space Grotesk', lineHeight: 1 }}>
+                {maxTide.toFixed(2)}m
+              </div>
+              <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>
+                {maxTideStation?.name?.split('(')[0]?.trim()}
+              </div>
+            </div>
+
+            {/* Cấp báo động */}
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
+                Cấp độ
+              </div>
+              <span style={{
+                display: 'inline-block',
+                fontSize: '10.5px', fontWeight: 700,
+                padding: '3px 9px', borderRadius: '8px',
+                background: cityTideAlert.bg,
+                color: cityTideAlert.color,
+                border: `1px solid ${cityTideAlert.color}40`
+              }}>
+                {cityTideAlert.label}
+              </span>
+              <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '4px' }}>
+                Đỉnh lúc {maxTideStation?.peak_hour}h00 • {maxTideStation?.trend === 'UP' ? '↑ Đang dâng' : '↓ Đang rút'}
+              </div>
+            </div>
+
+            {/* Mưa hiện tại */}
+            {rainfall_mm != null && (
+              <div style={{ gridColumn: '1 / -1', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px', marginTop: '2px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600 }}>🌧️ Lượng mưa hiện tại</span>
+                  <span style={{
+                    fontSize: '10px', fontWeight: 700,
+                    color: rainfall_mm >= 25 ? '#fb923c' : rainfall_mm >= 10 ? '#facc15' : '#10b981'
+                  }}>
+                    {rainfall_mm.toFixed(1)} mm/h
+                    {rainfall_mm >= 25 && <span style={{ marginLeft: '4px', fontSize: '9px', color: '#fb923c' }}>(Mưa to → Nguy cơ ngập cao)</span>}
+                    {rainfall_mm >= 10 && rainfall_mm < 25 && <span style={{ marginLeft: '4px', fontSize: '9px', color: '#facc15' }}>(Mưa vừa)</span>}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Thanh cuộn chọn nhanh trạm */}
         {tides && tides.length > 0 && (
           <div style={{
             display: 'flex',
@@ -167,16 +245,16 @@ export default function Sidebar({ tides = [], severeLocations = [], roads = [], 
           </div>
         )}
 
-        {/* Chế độ hiển thị biểu đồ */}
+        {/* Biểu đồ */}
         {tides && tides.length > 0 ? (
           showAllCharts ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto' }}>
               {tides.map((station) => (
-                <TideChart key={station.station_id} station={station} />
+                <TideChart key={station.station_id} station={station} rainfall_mm={rainfall_mm} />
               ))}
             </div>
           ) : (
-            activeStation && <TideChart station={activeStation} />
+            activeStation && <TideChart station={activeStation} rainfall_mm={rainfall_mm} />
           )
         ) : (
           <div style={{ padding: '14px', textAlign: 'center', color: '#64748b', fontSize: '11px' }}>

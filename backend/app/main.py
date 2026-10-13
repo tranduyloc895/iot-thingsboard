@@ -5,7 +5,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .models.schemas import DashboardData
+from .models.schemas import DashboardData, WeatherData
 from .services.tide_service import TideService
 from .services.weather_service import WeatherService
 from .services.thingsboard_service import tb_service
@@ -35,6 +35,8 @@ async def build_dashboard_data() -> DashboardData:
     severe = tb_service.get_severe_locations()
     roads = tb_service.get_flooded_roads(devices)
     zones = tb_service.get_flood_zones(devices)
+    weather_raw = await WeatherService.get_current_weather()
+    weather = WeatherData(**weather_raw)
     
     return DashboardData(
         timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -43,7 +45,8 @@ async def build_dashboard_data() -> DashboardData:
         severe_locations=severe,
         devices=devices,
         roads=roads,
-        zones=zones
+        zones=zones,
+        weather=weather
     )
 
 @app.get("/api/v1/dashboard", response_model=DashboardData)

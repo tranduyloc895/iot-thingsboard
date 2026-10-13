@@ -183,7 +183,8 @@ const INITIAL_DATA = {
   ],
   devices: [],
   roads: ROADS_INITIAL || [],
-  zones: ZONES_INITIAL || []
+  zones: ZONES_INITIAL || [],
+  weather: null
 };
 
 export default function App() {
@@ -212,7 +213,8 @@ export default function App() {
                 ...prev,
                 ...parsed,
                 roads: parsed.roads && parsed.roads.length > 0 ? parsed.roads : prev.roads,
-                zones: parsed.zones && parsed.zones.length > 0 ? parsed.zones : prev.zones
+                zones: parsed.zones && parsed.zones.length > 0 ? parsed.zones : prev.zones,
+                weather: parsed.weather ?? prev.weather
               }));
             }
           } catch (e) {
@@ -251,18 +253,19 @@ export default function App() {
         selectedLocation={selectedLocation}
       />
 
-      {/* Floating Glassmorphism Sidebar (10 Charts, Tabs Đường & Khu vực) */}
+      {/* Floating Glassmorphism Sidebar (Dự báo Triều cường + Cảnh báo Đường/Khu vực) */}
       <Sidebar 
         tides={data.tides} 
         severeLocations={data.severe_locations} 
         roads={data.roads || []}
         zones={data.zones || []}
         summary={data.summary}
+        weather={data.weather}
         onSelectLocation={(loc) => setSelectedLocation(loc)}
       />
 
-      {/* Floating Top Bar (Live Status & Clock) */}
-      <TopBar />
+      {/* Floating Top Bar (Live Status, Thời tiết & Clock) */}
+      <TopBar weather={data.weather} />
     </div>
   );
 }
