@@ -27,10 +27,10 @@ loki:
 
   s3:
     enabled: true
-    # Điền URL endpoint S3 của CMC Cloud (ví dụ: https://s3.cmccloud.vn hoặc tương đương)
-    endpoint: "https://s3.cmccloud.vn"
+    # Điền URL endpoint S3 của CMC Cloud
+    endpoint: "https://s3.hcm-5.cloud.cmctelecom.vn"
     bucket: "hcm-flood-logs"
-    region: "hcm-1"
+    region: "hcm-5"
     insecure: false
 
     # Cấu hình Kubernetes Secret cho Access Key & Secret Key

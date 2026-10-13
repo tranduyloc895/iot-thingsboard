@@ -38,6 +38,7 @@ data:
       aws:
         endpoint: ${S3_ENDPOINT}
         bucketnames: ${S3_BUCKET}
+        region: ${S3_REGION}
         access_key_id: ${S3_ACCESS_KEY}
         secret_access_key: ${S3_SECRET_KEY}
         s3forcepathstyle: true
