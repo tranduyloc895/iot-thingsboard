@@ -52,3 +52,26 @@ ingress:
 
 # Credentials are injected from a namespace-local Kubernetes Secret.
 envFrom: []
+
+networkPolicy:
+  enabled: false
+  ingressController:
+    namespaceSelector:
+      kubernetes.io/metadata.name: ingress-nginx
+    podSelector:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/component: controller
+  monitoring:
+    enabled: true
+    namespaceSelector:
+      kubernetes.io/metadata.name: cmc-monitoring
+    podSelector:
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/component: server
+  thingsboard:
+    namespace: thingsboard
+    port: 8080
+    podSelector:
+      app.kubernetes.io/name: thingsboard-node
+  externalApi:
+    enabled: true
