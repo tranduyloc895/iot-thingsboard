@@ -54,7 +54,7 @@ networkPolicy:
       app.kubernetes.io/component: server
   dbaas:
     enabled: true
-    cidr: "10.0.5.0/24"
+    cidr: "10.0.0.0/16"
   externalAlerts:
     enabled: true
 
