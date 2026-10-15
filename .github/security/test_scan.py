@@ -118,6 +118,18 @@ class SecurityGateTests(unittest.TestCase):
                 self.assertIn("Security result: FAIL", content)
                 self.assertIn("BYPASSED (demo report-only)", content)
 
+    def test_combined_only_source_has_exactly_two_named_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = [dict(name=name, status="complete", findings=[])
+                       for name in ("Trivy: source", "Semgrep: SAST")]
+            with patch.object(scan, "run_scan", side_effect=results), patch("sys.argv", [
+                    "scan.py", "source", "--combined-only", "--output", directory]):
+                self.assertEqual(scan.main(), 0)
+            files = list(Path(directory).iterdir())
+            self.assertEqual(len(files), 2)
+            self.assertEqual({f.suffix for f in files}, {".html", ".json"})
+            self.assertTrue(all(f.stem.startswith("source-") for f in files))
+
     def test_separate_scanner_reports_have_unique_names_and_metadata(self):
         scans = [dict(name="Trivy: source", status="complete", findings=[]),
                  dict(name="Semgrep: SAST", status="error", error="TimeoutExpired", findings=[])]

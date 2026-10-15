@@ -19,7 +19,7 @@ run, HTML/JSON artifacts are still uploaded, and security findings or scanner
 errors do not block CI. Build, registry, Git, PR creation, and artifact upload
 failures still fail normally. This mode does not repair or conceal findings.
 
-Use **Settings Ã¢â€ â€™ Secrets and variables Ã¢â€ â€™ Actions Ã¢â€ â€™ Variables** to create or edit
+Use **Settings ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Secrets and variables ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Actions ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ Variables** to create or edit
 repository variable `SECURITY_GATE_MODE`:
 
 | Value | CI behavior |
@@ -76,16 +76,16 @@ security-frontend-<sha12>-<run-id>-attempt<attempt>
 security-backend-<sha12>-<run-id>-attempt<attempt>
 ```
 
-Download once, unzip, and open **index.html**. That single report contains three
+Download once, unzip, and open the **uniquely named HTML file**. That single report contains three
 sections: Semgrep SAST, Trivy source/dependencies/secrets/IaC, and Trivy image.
-`report.json` contains the same combined normalized findings. Canonical HTML/JSON
-filenames also embed the full commit, run ID, attempt, and job for traceability;
-`index.html` / `report.json` are convenience aliases. No extra per-tool artifacts
+The JSON file contains the same combined normalized findings. Each artifact
+contains exactly one HTML and one JSON file, named with the full commit, run ID,
+attempt, and job. No duplicate `index.html` or `report.json` aliases are uploaded. No extra per-tool artifacts
 are uploaded, and automatic Docker `.dockerbuild` artifact upload is disabled.
 
 The standalone PR/main/scheduled source workflow publishes one
 `security-source-<sha12>-<run-id>-attempt<attempt>` artifact; it contains source
-results only. Its index links to the scanner-specific files inside the same ZIP.
+results only, also as one uniquely named HTML/JSON pair.
 
 Reports are assembled and uploaded even after a scan/build failure. A phase that
 did not run appears as unavailable rather than passing. Artifacts are retained

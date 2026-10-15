@@ -171,6 +171,8 @@ def main():
     parser.add_argument("mode", choices=["source", "image"])
     parser.add_argument("--image-archive", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--combined-only", action="store_true",
+                        help="Write only uniquely named combined HTML/JSON, without aliases or per-tool copies")
     parser.add_argument("--gate-mode", choices=["enforce", "report-only"],
                         default=os.getenv("SECURITY_GATE_MODE", "enforce"))
     args = parser.parse_args()
@@ -194,7 +196,8 @@ def main():
             scans = [run_scan("Trivy: image dependencies and secrets", TRIVY,
                 ["image", "--input", f"/src/{archive.name}", "--scanners", "vuln,secret", "--format", "json",
                  "--exit-code", "0", "--timeout", "15m"], archive.parent, trivy_findings)]
-    return write_reports(scans, args.output, args.mode, args.gate_mode)
+    return write_reports(scans, args.output, args.mode, args.gate_mode,
+                         split_reports=not args.combined_only)
 
 
 if __name__ == "__main__":

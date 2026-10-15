@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-from scan import report_name, write_reports
+from scan import write_reports
 
 
 def bundle(output, component, gate_mode):
@@ -26,12 +26,7 @@ def bundle(output, component, gate_mode):
                        run_attempt=os.getenv("GITHUB_RUN_ATTEMPT", "1"), job=os.getenv("GITHUB_JOB", component),
                        workflow=os.getenv("GITHUB_WORKFLOW", "local"))
     label = f"security-{component}"
-    result = write_reports(scans, output, label, gate_mode, split_reports=False, context=context)
-    filename = report_name(label, context)
-    # Convenient entry point; canonical filenames still identify the commit/run/job.
-    (output / "index.html").write_bytes((output / f"{filename}.html").read_bytes())
-    (output / "report.json").write_bytes((output / f"{filename}.json").read_bytes())
-    return result
+    return write_reports(scans, output, label, gate_mode, split_reports=False, context=context)
 
 
 if __name__ == "__main__":
