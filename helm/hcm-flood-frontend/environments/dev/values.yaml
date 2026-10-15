@@ -5,10 +5,10 @@ autoscaling:
   minReplicas: 2
   targetCPUUtilizationPercentage: 70
 image:
-  digest: "sha256:1e1719e6ecaa61433cd38c3f3294fae585834154167806928e42cc590c78e054"
+  digest: "sha256:e8c4e655203b80714814b464a2c4d7019a3f27e5ea8f41d2efe65bbf1269bd0f"
   pullPolicy: IfNotPresent
   repository: ghcr.io/tranduyloc895/hcm-flood-frontend
-  tag: "564125279b0c41bc97715e839c5c68dc0e18dfae"
+  tag: "9d62c09708035454303f582ac0d20c542ee6d140"
 imagePullSecrets: []
 ingress:
   annotations:
