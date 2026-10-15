@@ -1,0 +1,34 @@
+name: Security scans
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+  schedule:
+    - cron: '23 1 * * *'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  source-security:
+    name: Source security gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Scan dependencies, secrets, IaC and code
+        run: python3 .github/security/scan.py source --output security-reports/source
+      - name: Upload HTML and JSON reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: security-reports/source/
+          if-no-files-found: error
+          retention-days: 14
