@@ -2,6 +2,10 @@
 
 Stack giám sát và lưu vết log tập trung cho dự án **HCM Flood Warning IoT** trên nền tảng **CMC Cloud Kubernetes (CKE)**.
 
+Discord notifications for CI, HPA/node scaling and resource thresholds:
+[setup and verification](../../docs/discord-notifications.md). Alerting is opt-in
+via `notifications.enabled`; provision the webhook Secret before enabling.
+
 ## 1. Thành phần
 - **Grafana (v11.2.0)**: Giao diện trực quan hóa, ghim tại `System NodeGroup` (`cmccloud-k8s-nodegroups: system`), ingress tại `grafana.flood.web-ui.com`.
 - **Loki Single-Binary (v2.9.8)**: Gom log, nén chunks và đẩy thẳng lên **CMC S3 Object Storage**, ghim tại `System NodeGroup`.
