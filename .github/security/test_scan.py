@@ -101,6 +101,21 @@ class SecurityGateTests(unittest.TestCase):
                 self.assertEqual(scan.main(), 1)
             self.assertFalse(json.loads((Path(directory) / "report.json").read_text())["passed"])
 
+    def test_demo_passes_ci_without_hiding_failed_security_result(self):
+        finding = dict(kind="dependency", severity="CRITICAL", target="app", rule="CVE-test", message="test", fix="upgrade")
+        for results in ([dict(name="Trivy", status="complete", findings=[finding])],
+                        [dict(name="Semgrep", status="error", error="TimeoutExpired", findings=[])]):
+            with tempfile.TemporaryDirectory() as directory:
+                output = Path(directory)
+                self.assertEqual(scan.write_reports(results, output, "source", "report-only"), 0)
+                report = json.loads((output / "report.json").read_text())
+                self.assertFalse(report["passed"])
+                self.assertTrue(report["pipeline_passed"])
+                self.assertEqual(report["gate_mode"], "report-only")
+                content = (output / "index.html").read_text(encoding="utf-8")
+                self.assertIn("Security result: FAIL", content)
+                self.assertIn("BYPASSED (demo report-only)", content)
+
 
 if __name__ == "__main__":
     unittest.main()

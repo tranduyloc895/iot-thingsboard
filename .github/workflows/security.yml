@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+# Demo default. Set repository variable SECURITY_GATE_MODE=enforce to block again.
+env:
+  SECURITY_GATE_MODE: ${{ vars.SECURITY_GATE_MODE || 'report-only' }}
+
 jobs:
   source-security:
     name: Source security gate

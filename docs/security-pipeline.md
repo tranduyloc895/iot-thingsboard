@@ -2,9 +2,9 @@
 
 The backend and frontend build workflows require `Security scans` to pass before
 building an image. Each image is built once, loaded locally, exported to a runner
-temporary directory, scanned, and only then pushed to GHCR. The existing GitOps
-update and production promotion PR use the registry digest of that scanned image.
-Failed checks prevent the push, dev image update, and promotion PR.
+temporary directory, scanned, and only then pushed to GHCR. The GitOps update writes only the dev values on branch `dev`. A separate
+promotion PR changes only prod values on `main`, using the registry digest of
+that same image. See [the approval workflow](gitops-promotion.md).
 
 ## Coverage and policy
 
@@ -14,11 +14,29 @@ Failed checks prevent the push, dev image update, and promotion PR.
 | Semgrep OSS | Source code using `p/security-audit` and `p/owasp-top-ten` | ERROR findings (mapped to HIGH) |
 | Trivy image | OS packages, installed application packages, secrets in the final image | HIGH/CRITICAL vulnerabilities; every secret |
 
-Lower severities remain in reports. Unfixed vulnerabilities also block; there is
-no blanket ignore file or `continue-on-error`. Scanner crashes, timeouts, invalid
-output, Semgrep scan errors, and zero Semgrep coverage fail the gate. Fix findings
-or review individual exceptions through code review; do not disable the gate to
-publish an image.
+The workflows currently default to **demo `report-only` mode**: all scans still
+run, HTML/JSON artifacts are still uploaded, and security findings or scanner
+errors do not block CI. Build, registry, Git, PR creation, and artifact upload
+failures still fail normally. This mode does not repair or conceal findings.
+
+Use **Settings → Secrets and variables → Actions → Variables** to create or edit
+repository variable `SECURITY_GATE_MODE`:
+
+| Value | CI behavior |
+| --- | --- |
+| `report-only` (workflow default if unset) | Allow CI to proceed; explicitly label the gate BYPASSED for demo |
+| `enforce` | Fail CI on blocking findings or scanner errors |
+
+This variable controls both source scans and image scans. Report JSON retains
+`passed` as the actual security result and adds `pipeline_passed` and `gate_mode`.
+HTML and job summaries display the security result separately from the pipeline
+gate. Reports can therefore say FAIL while a demo pipeline succeeds. The local
+CLI defaults to `enforce`; use `--gate-mode report-only` for an explicit local
+bypass. An invalid mode fails rather than silently bypassing.
+
+In `enforce` mode, lower severities remain in reports and unfixed HIGH/CRITICAL
+vulnerabilities block too. Scanner crashes, timeouts, invalid output, Semgrep scan
+errors, and zero Semgrep coverage also block.
 
 Filesystem dependency analysis depends on supported manifests and lockfiles;
 the image scan covers the resolved Python packages installed from the backend's
@@ -40,9 +58,9 @@ branch and fresh vulnerability data. The build workflows also call it directly,
 so their dependency gate does not rely on a separate workflow finishing first.
 The standalone run can overlap with a build's source scan.
 
-In GitHub branch protection/rulesets, make **Source security gate** a required
-check for `main` and `dev`, require review for production promotion PRs, and
-restrict direct pushes. These repository settings must be configured separately;
+Where supported by your GitHub plan, require **Source security gate** and at
+least one approval for `main`, and restrict direct pushes. Keep bot writes to
+dev allowed, since CI commits dev image values there. These repository settings must be configured separately;
 workflow files cannot enforce them. Allow workflow PR creation if the existing
 promotion automation needs it. No paid security service or new credential is
 required. The scan job has only `contents: read`; scanners receive no GitHub token
@@ -72,7 +90,8 @@ in `.github/security/scan.py`; Actions are pinned by commit SHA. Review upstream
 releases and update versions and digests together. Trivy databases/check bundles
 and Semgrep registry rule packs are downloaded at scan time for current coverage;
 rule packs are not immutable. Docker Hub, Trivy database registries, and the
-Semgrep registry must be reachable; download failures block publication.
+Semgrep registry must be reachable. In enforce mode, download failures block
+publication; demo report-only mode records the failure and allows CI to proceed.
 
 Run from the repository root with Python 3 and a running Linux Docker engine:
 

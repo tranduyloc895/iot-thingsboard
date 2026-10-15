@@ -87,11 +87,13 @@ def blocked(finding):
     return finding["kind"] == "secret" or finding["severity"] not in ("MEDIUM", "LOW", "INFO")
 
 
-def write_reports(scans, output, label):
+def write_reports(scans, output, label, gate_mode="enforce"):
     output.mkdir(parents=True, exist_ok=True)
     failed = any(s["status"] != "complete" or any(map(blocked, s["findings"])) for s in scans)
     report = dict(label=label, commit=os.getenv("GITHUB_SHA", "local"),
-                  passed=not failed, tools=dict(trivy=TRIVY, semgrep=SEMGREP), scans=scans)
+                  passed=not failed, gate_mode=gate_mode,
+                  pipeline_passed=not failed or gate_mode == "report-only",
+                  tools=dict(trivy=TRIVY, semgrep=SEMGREP), scans=scans)
     (output / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     esc = lambda value: html.escape(str(value), quote=True)
     sections = []
@@ -108,24 +110,27 @@ def write_reports(scans, output, label):
                         '<table><thead><tr><th>Severity</th><th>Type</th><th>Location</th><th>Rule</th><th>Finding</th><th>Remediation</th></tr></thead>'
                         f'<tbody>{rows}</tbody></table>')
     status = "FAIL" if failed else "PASS"
-    print(f'Security gate: {status}. Reports: {output / "index.html"} and {output / "report.json"}', flush=True)
+    gate_status = "BYPASSED (demo report-only)" if gate_mode == "report-only" else status
+    print(f'Security result: {status}; pipeline gate: {gate_status}. Reports: {output / "index.html"} and {output / "report.json"}', flush=True)
     document = ('<!doctype html><html lang="en"><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width, initial-scale=1">'
                 '<title>Security report</title><style>body{font:15px system-ui;margin:2rem;color:#172b4d}'
                 'table{border-collapse:collapse;width:100%;margin-bottom:2rem}td,th{border:1px solid #ccc;padding:.6rem;text-align:left;overflow-wrap:anywhere}'
                 'th{background:#eef2f7}h1{color:#173d70}</style>'
-                f'<h1>Security gate: {status}</h1><p>{esc(label)} · commit {esc(report["commit"])}</p>'
-                '<p>Blocks HIGH/CRITICAL vulnerabilities and misconfigurations, Semgrep ERROR findings, all secrets, and scanner errors. '
+                f'<h1>Security result: {status}</h1><p>Pipeline gate: {esc(gate_status)} · mode: {esc(gate_mode)}</p>'
+                f'<p>{esc(label)} · commit {esc(report["commit"])}</p>'
+                '<p>In enforce mode: blocks HIGH/CRITICAL vulnerabilities and misconfigurations, Semgrep ERROR findings, all secrets, and scanner errors. '
+                'In report-only demo mode: findings and scanner errors are reported without blocking CI. '
                 'Lower severities remain visible. Secret values and source snippets are excluded.</p>'
                 + "".join(sections) + '</html>')
     (output / "index.html").write_text(document, encoding="utf-8")
     summary = os.getenv("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as stream:
-            stream.write(f"### Security gate: {status}\n\nDownload the security artifact and open `index.html`.\n\n")
+            stream.write(f"### Security result: {status} — pipeline gate: {gate_status}\n\nDownload the security artifact and open `index.html`.\n\n")
             for scan in scans:
                 stream.write(f'- {scan["name"]}: {scan["status"]}, {len(scan["findings"])} findings, {sum(map(blocked, scan["findings"]))} blocking\n')
-    return 1 if failed else 0
+    return 1 if failed and gate_mode == "enforce" else 0
 
 
 def main():
@@ -133,7 +138,11 @@ def main():
     parser.add_argument("mode", choices=["source", "image"])
     parser.add_argument("--image-archive", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--gate-mode", choices=["enforce", "report-only"],
+                        default=os.getenv("SECURITY_GATE_MODE", "enforce"))
     args = parser.parse_args()
+    if args.gate_mode not in ("enforce", "report-only"):
+        parser.error("SECURITY_GATE_MODE must be enforce or report-only")
     if args.mode == "source":
         scans = [run_scan("Trivy: dependencies, secrets, IaC", TRIVY,
             ["fs", "--scanners", "vuln,secret,misconfig", "--format", "json", "--exit-code", "0", "--timeout", "15m",
@@ -152,7 +161,7 @@ def main():
             scans = [run_scan("Trivy: image dependencies and secrets", TRIVY,
                 ["image", "--input", f"/src/{archive.name}", "--scanners", "vuln,secret", "--format", "json",
                  "--exit-code", "0", "--timeout", "15m"], archive.parent, trivy_findings)]
-    return write_reports(scans, args.output, args.mode)
+    return write_reports(scans, args.output, args.mode, args.gate_mode)
 
 
 if __name__ == "__main__":

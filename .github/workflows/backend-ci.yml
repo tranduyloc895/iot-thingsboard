@@ -27,6 +27,8 @@ jobs:
   build-and-push-backend:
     needs: security
     timeout-minutes: 45
+    env:
+      SECURITY_GATE_MODE: ${{ vars.SECURITY_GATE_MODE || 'report-only' }}
     permissions:
       contents: write
       packages: write
@@ -92,11 +94,11 @@ jobs:
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
-      # Build uses dev source; deployment config is independently checked out from main.
+      # Dev GitOps writes stay on dev; main only changes through a reviewed promotion PR.
       - name: Checkout deployment configuration
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          ref: main
+          ref: dev
           path: deployment-config
           fetch-depth: 0
 
@@ -120,8 +122,8 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "chore(dev): update backend image to $IMAGE_TAG [skip ci]"
             for attempt in 1 2 3 4 5; do
-              git pull --rebase origin main
-              if git push origin HEAD:main; then
+              git pull --rebase origin dev
+              if git push origin HEAD:dev; then
                 echo "config_revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
                 exit 0
               fi
@@ -152,8 +154,12 @@ jobs:
           dev_values="helm/hcm-flood-backend/environments/dev/values.yaml"
           [[ $(grep -c '^  tag:' "$values") -eq 1 ]]
           [[ $(grep -c '^  digest:' "$values") -eq 1 ]]
+          # Verify the immutable candidate was actually recorded on dev.
+          dev_snapshot=$(git show "$DEV_CONFIG_REVISION:$dev_values")
+          [[ "$(printf '%s\n' "$dev_snapshot" | grep '^  tag:')" == "  tag: \"$IMAGE_TAG\"" ]]
+          [[ "$(printf '%s\n' "$dev_snapshot" | grep '^  digest:')" == "  digest: \"$IMAGE_DIGEST\"" ]]
           # The digest must address the same repository in both environments.
-          [[ "$(grep '^  repository:' "$values")" == "$(grep '^  repository:' "$dev_values")" ]]
+          [[ "$(grep '^  repository:' "$values")" == "$(printf '%s\n' "$dev_snapshot" | grep '^  repository:')" ]]
           sed -i -E "s|^  tag:.*$|  tag: \"$IMAGE_TAG\"|; s|^  digest:.*$|  digest: \"$IMAGE_DIGEST\"|" "$values"
           if git diff --quiet -- "$values"; then
             echo "Production already references this image; no PR needed."
@@ -168,7 +174,8 @@ jobs:
             printf 'Promote the backend image built from dev to production. No rebuild.\n\n'
             printf -- '- Source commit: %s\n- Dev configuration commit: %s\n- Image: ghcr.io/tranduyloc895/hcm-flood-backend@%s\n' "$IMAGE_TAG" "$DEV_CONFIG_REVISION" "$IMAGE_DIGEST"
             printf -- '- CI run: %s/%s/actions/runs/%s\n\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
-            printf 'Only prod image.tag/image.digest change. Dev/prod configuration and Secrets stay separate.\n\n'
+            printf 'Only prod image.tag/image.digest change. The dev image commit stays on branch dev; main is unchanged until this PR is merged.\n\n'
+            printf 'Security mode: %s (report-only is a demo bypass; inspect HTML artifacts).\n\n' "$SECURITY_GATE_MODE"
             printf 'Before merging, verify this exact digest in dev and record the test result in this PR.\n'
             printf 'A newer dev build does not change the image in this PR. Merge activates ArgoCD prod sync.\n'
           } > "$body_file"
