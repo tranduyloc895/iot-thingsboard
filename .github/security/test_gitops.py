@@ -21,7 +21,7 @@ def script(component, step):
 
 @unittest.skipUnless(GIT and BASH and Path(BASH).is_file(), "Git and Bash required")
 class GitOpsTests(unittest.TestCase):
-    def test_dev_commit_and_image_only_promotion_leave_main_unchanged(self):
+    def test_main_dev_values_update_and_prod_changes_only_in_promotion_branch(self):
         for component in ("backend", "frontend"):
             with self.subTest(component=component), tempfile.TemporaryDirectory(prefix="gitops-") as directory:
                 root = Path(directory)
@@ -48,7 +48,7 @@ class GitOpsTests(unittest.TestCase):
                 baseline = git(seed, "rev-parse", "HEAD")
                 git(seed, "remote", "add", "origin", str(remote))
                 git(seed, "push", "origin", "main", "main:dev")
-                git(root, "clone", "--branch", "dev", str(remote), str(runner))
+                git(root, "clone", "--branch", "main", str(remote), str(runner))
                 output, summary = root / "output", root / "summary"
                 env.update(IMAGE_TAG=baseline, IMAGE_DIGEST="sha256:" + "a" * 64,
                            GITHUB_OUTPUT=output.as_posix(), GITHUB_STEP_SUMMARY=summary.as_posix(),
@@ -57,14 +57,16 @@ class GitOpsTests(unittest.TestCase):
                 subprocess.run([BASH, "-e", "-c", script(component, "Update dev image only")],
                                cwd=runner, env=env, check=True, capture_output=True, text=True)
                 revision = output.read_text().strip().split("=", 1)[1]
-                self.assertEqual(git(remote, "rev-parse", "dev"), revision)
-                self.assertEqual(git(remote, "rev-parse", "main"), baseline)
+                self.assertEqual(git(remote, "rev-parse", "main"), revision)
+                self.assertEqual(git(remote, "rev-parse", "dev"), baseline)
+                self.assertEqual(git(remote, "show", f"main:{paths['prod']}"), git(remote, "show", f"{baseline}:{paths['prod']}"))
                 self.assertEqual(git(remote, "diff", "--name-only", baseline, revision), paths["dev"])
-                # A concurrent update to dev must survive the promotion as well.
-                (runner / "unrelated.txt").write_text("new dev code")
+                # A concurrent configuration update on main must survive promotion too.
+                (runner / "unrelated.txt").write_text("unrelated config change")
                 git(runner, "add", "unrelated.txt")
-                git(runner, "commit", "-m", "later dev change")
-                git(runner, "push", "origin", "dev")
+                git(runner, "commit", "-m", "later config change")
+                git(runner, "push", "origin", "main")
+                main_before_promotion = git(remote, "rev-parse", "main")
                 fakebin = root / "bin"
                 fakebin.mkdir()
                 gh = fakebin / "gh"
@@ -74,12 +76,12 @@ class GitOpsTests(unittest.TestCase):
                 subprocess.run([BASH, "-e", "-c", script(component, "Open production promotion PR")],
                                cwd=runner, env=env, check=True, capture_output=True, text=True)
                 candidate = f"codex/promote-{component}-123-1"
-                self.assertEqual(git(remote, "rev-parse", "main"), baseline)
+                self.assertEqual(git(remote, "rev-parse", "main"), main_before_promotion)
                 self.assertEqual(git(remote, "diff", "--name-only", "main", candidate), paths["prod"])
                 prod = git(remote, "show", f"{candidate}:{paths['prod']}")
                 self.assertIn(env["IMAGE_TAG"], prod)
                 self.assertIn(env["IMAGE_DIGEST"], prod)
-                self.assertNotEqual(git(remote, "rev-parse", "dev"), baseline)
+                self.assertEqual(git(remote, "rev-parse", "dev"), baseline)
                 self.assertEqual(git(remote, "show", f"dev:{paths['prod']}"), git(remote, "show", f"main:{paths['prod']}"))
 
 

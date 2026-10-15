@@ -2,7 +2,7 @@
 
 The backend and frontend workflows scan source in the same job before building
 an image. Security results block in enforce mode and allow CI in demo mode. Each image is built once, loaded locally, exported to a runner
-temporary directory, scanned, and only then pushed to GHCR. The GitOps update writes only the dev values on branch `dev`. A separate
+temporary directory, scanned, and only then pushed to GHCR. The GitOps update writes only the dev values on branch `main`. A separate
 promotion PR changes only prod values on `main`, using the registry digest of
 that same image. See [the approval workflow](gitops-promotion.md).
 
@@ -19,7 +19,7 @@ run, HTML/JSON artifacts are still uploaded, and security findings or scanner
 errors do not block CI. Build, registry, Git, PR creation, and artifact upload
 failures still fail normally. This mode does not repair or conceal findings.
 
-Use **Settings â†’ Secrets and variables â†’ Actions â†’ Variables** to create or edit
+Use **Settings Ã¢â€ â€™ Secrets and variables Ã¢â€ â€™ Actions Ã¢â€ â€™ Variables** to create or edit
 repository variable `SECURITY_GATE_MODE`:
 
 | Value | CI behavior |
@@ -58,8 +58,10 @@ and fresh vulnerability data. Dev builds scan source directly in the build job,
 so a dev push no longer triggers an additional standalone security workflow.
 
 Where supported by your GitHub plan, require **Source security gate** and at
-least one approval for `main`, and restrict direct pushes. Keep bot writes to
-dev allowed, since CI commits dev image values there. These repository settings must be configured separately;
+least one approval for `main`, and restrict direct pushes. In this same-repository model the bot needs permission to push dev image values
+to main; production image changes are proposed through PRs. For enforceable
+per-path protection, use a separate GitOps repository/policy rather than granting
+the bot unrestricted review bypass. These repository settings must be configured separately;
 workflow files cannot enforce them. Allow workflow PR creation if the existing
 promotion automation needs it. No paid security service or new credential is
 required. The scan job has only `contents: read`; scanners receive no GitHub token
