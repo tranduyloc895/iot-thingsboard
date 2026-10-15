@@ -82,6 +82,18 @@ class SecurityGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             self.assertEqual(scan.write_reports([result], Path(directory), "source"), 0)
 
+    def test_semgrep_nonzero_preserves_findings_and_safe_diagnostics(self):
+        data = dict(paths=dict(scanned=["app.py"]), results=[dict(check_id="test", path="app.py", start=dict(line=1),
+                    extra=dict(severity="ERROR", message="SECRET_VALUE"))],
+                    errors=[dict(type="PartialParsing", level="warn", code=3, message="SECRET_VALUE")])
+        with patch.object(scan.subprocess, "run", return_value=subprocess.CompletedProcess([], 3, json.dumps(data), "SECRET_VALUE")):
+            result = scan.run_scan("Semgrep", scan.SEMGREP, [], Path.cwd(), scan.semgrep_findings)
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["exit_code"], 3)
+        self.assertEqual(len(result["findings"]), 1)
+        self.assertEqual(result["diagnostics"], [dict(type="PartialParsing", level="warn", code=3)])
+        self.assertNotIn("SECRET_VALUE", json.dumps(result))
+
     def test_missing_archive_fails_with_report(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch("sys.argv", ["scan.py", "image", "--output", directory]):

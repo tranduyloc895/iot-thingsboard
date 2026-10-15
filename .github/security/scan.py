@@ -4,6 +4,7 @@ import argparse
 import html
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -55,18 +56,27 @@ def run_scan(name, image, args, mount, parser):
                "--mount", f"type=bind,source={mount},target=/src,readonly",
                "--workdir", "/src", "--env", "HOME=/tmp", "--env", "TRIVY_CACHE_DIR=/tmp/trivy",
                image, *args]
+    print(f"Starting {name}", flush=True)
+    exit_code = None
     try:
         process = subprocess.run(command, capture_output=True, text=True, timeout=1200)
-        if process.returncode:
-            raise ValueError(f"scanner exit {process.returncode}")
+        exit_code = process.returncode
         data = json.loads(process.stdout)
-        if data.get("errors"):
-            raise ValueError("scanner reported incomplete coverage/errors")
         findings = parser(data)
+        if process.returncode or data.get("errors"):
+            # Only scanner-defined identifiers are retained, never messages/snippets.
+            errors = []
+            for error in data.get("errors", []):
+                details = {key: error[key] for key in ("type", "level", "code")
+                           if key in error and re.fullmatch(r"[A-Za-z0-9_ -]{1,80}", str(error[key]))}
+                if details:
+                    errors.append(details)
+            return dict(name=name, status="error", exit_code=exit_code,
+                        error="Scanner reported errors or a nonzero exit", diagnostics=errors, findings=findings)
         return dict(name=name, status="complete", findings=findings)
     except (OSError, subprocess.TimeoutExpired, ValueError, KeyError, TypeError, AttributeError) as error:
         # Raw stderr/stdout may include secrets. Publish only the error category.
-        return dict(name=name, status="error", error=type(error).__name__, findings=[])
+        return dict(name=name, status="error", error=type(error).__name__, exit_code=exit_code, findings=[])
 
 
 def blocked(finding):
@@ -82,13 +92,19 @@ def write_reports(scans, output, label):
     esc = lambda value: html.escape(str(value), quote=True)
     sections = []
     for scan in scans:
+        blocking = sum(map(blocked, scan["findings"]))
+        detail = ""
+        if scan["status"] != "complete":
+            detail = f'{scan.get("error", "Scanner error")}; exit={scan.get("exit_code", "unavailable")}; {json.dumps(scan.get("diagnostics", []))}'
+        print(f'{scan["name"]}: {scan["status"]}; {len(scan["findings"])} findings; {blocking} blocking. {detail}', flush=True)
         rows = "".join("<tr>" + "".join(f"<td>{esc(f[key])}</td>" for key in
                       ("severity", "kind", "target", "rule", "message", "fix")) + "</tr>" for f in scan["findings"])
         status = "COMPLETE" if scan["status"] == "complete" else "SCANNER ERROR — coverage unavailable; inspect CI runner/network and rerun"
-        sections.append(f'<h2>{esc(scan["name"])}</h2><p>{esc(status)} · {len(scan["findings"])} findings</p>'
+        sections.append(f'<h2>{esc(scan["name"])}</h2><p>{esc(status)} · {len(scan["findings"])} findings · {blocking} blocking</p><p>{esc(detail)}</p>'
                         '<table><thead><tr><th>Severity</th><th>Type</th><th>Location</th><th>Rule</th><th>Finding</th><th>Remediation</th></tr></thead>'
                         f'<tbody>{rows}</tbody></table>')
     status = "FAIL" if failed else "PASS"
+    print(f'Security gate: {status}. Reports: {output / "index.html"} and {output / "report.json"}', flush=True)
     document = ('<!doctype html><html lang="en"><meta charset="utf-8">'
                 '<meta name="viewport" content="width=device-width, initial-scale=1">'
                 '<title>Security report</title><style>body{font:15px system-ui;margin:2rem;color:#172b4d}'
@@ -104,7 +120,7 @@ def write_reports(scans, output, label):
         with open(summary, "a", encoding="utf-8") as stream:
             stream.write(f"### Security gate: {status}\n\nDownload the security artifact and open `index.html`.\n\n")
             for scan in scans:
-                stream.write(f'- {scan["name"]}: {scan["status"]}, {len(scan["findings"])} findings\n')
+                stream.write(f'- {scan["name"]}: {scan["status"]}, {len(scan["findings"])} findings, {sum(map(blocked, scan["findings"]))} blocking\n')
     return 1 if failed else 0
 
 
