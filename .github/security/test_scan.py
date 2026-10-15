@@ -30,7 +30,9 @@ class SecurityGateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
             self.assertEqual(scan.write_reports([dict(name="Trivy", status="complete", findings=findings)], output, "source"), 1)
-            for path in output.iterdir():
+            for path in output.rglob("*"):
+                if not path.is_file():
+                    continue
                 self.assertNotIn(marker, path.read_text(encoding="utf-8"))
 
     def test_html_escapes_untrusted_fields(self):
@@ -115,6 +117,30 @@ class SecurityGateTests(unittest.TestCase):
                 content = (output / "index.html").read_text(encoding="utf-8")
                 self.assertIn("Security result: FAIL", content)
                 self.assertIn("BYPASSED (demo report-only)", content)
+
+    def test_separate_scanner_reports_have_unique_names_and_metadata(self):
+        scans = [dict(name="Trivy: source", status="complete", findings=[]),
+                 dict(name="Semgrep: SAST", status="error", error="TimeoutExpired", findings=[])]
+        env = dict(GITHUB_SHA="a" * 40, GITHUB_RUN_ID="12345", GITHUB_RUN_ATTEMPT="2",
+                   GITHUB_JOB="source-security", GITHUB_WORKFLOW="Backend CI")
+        with tempfile.TemporaryDirectory() as directory, patch.dict(scan.os.environ, env):
+            output = Path(directory)
+            self.assertEqual(scan.write_reports(scans, output, "source", "report-only"), 0)
+            for tool in ("semgrep", "trivy"):
+                stem = f'{tool}-source-{env["GITHUB_SHA"]}-12345-attempt2-source-security'
+                report = json.loads((output / tool / f"{stem}.json").read_text())
+                self.assertEqual(len(report["scans"]), 1)
+                self.assertTrue(report["scans"][0]["name"].lower().startswith(tool))
+                self.assertEqual(report["run_id"], "12345")
+                self.assertEqual(report["run_attempt"], "2")
+                self.assertTrue((output / tool / f"{stem}.html").is_file())
+                self.assertIn(f'{tool}/{stem}.html', (output / "index.html").read_text())
+            semgrep = next((output / "semgrep").glob("*.json"))
+            self.assertFalse(json.loads(semgrep.read_text())["passed"])
+            with patch.dict(scan.os.environ, dict(GITHUB_RUN_ATTEMPT="3")):
+                scan.write_reports(scans, output, "source", "report-only")
+            self.assertEqual(len(list((output / "semgrep").glob("*.html"))), 2)
+            self.assertTrue(semgrep.is_file())
 
 
 if __name__ == "__main__":

@@ -68,12 +68,35 @@ or Docker socket. The publish job retains the permissions used by GitOps.
 
 ## HTML reports
 
-Open an Actions run, download `security-source-<run>-<attempt>` or
-`security-image-backend-<run>-<attempt>` / `security-image-frontend-<run>-<attempt>`,
-unzip, and open **index.html**. `report.json` contains the same normalized findings
-for automation. Artifacts are retained for 14 days and uploaded even when a scan
-fails. A runner cancellation or failure before report generation can leave no
-artifact; the upload step reports that as an error.
+Each Actions run now publishes clearly named artifacts:
+
+| Artifact prefix | Contents |
+| --- | --- |
+| `security-source-` | Combined source report, with links to individual scanner reports |
+| `semgrep-source-` | Semgrep SAST only, HTML + normalized JSON |
+| `trivy-source-` | Trivy dependencies, secrets, IaC only, HTML + normalized JSON |
+| `trivy-image-backend-` / `trivy-image-frontend-` | Image scan report for the component |
+
+Every artifact name ends with `<full-commit-sha>-<run-id>-attempt<attempt>`.
+The run ID separates workflows scanning the same commit, and the attempt separates
+reruns. HTML/JSON filenames additionally include the job ID, for example:
+
+```text
+semgrep-source-<full-sha>-38679651208-attempt1-source-security.html
+semgrep-source-<full-sha>-38679651208-attempt1-source-security.json
+```
+
+Download the `semgrep-source-*` artifact to see Semgrep directly; open its named
+HTML file. Semgrep previously appeared inside the combined `security-source`
+report; it was already being scanned. Individual reports are also generated when
+the scanner errors or finds nothing, so missing coverage is visible.
+
+The combined artifact retains `index.html` / `report.json` as convenience aliases
+alongside uniquely named files. Its `index.html` links to `semgrep/` and `trivy/`.
+Commit, workflow, job, run ID, and attempt are embedded in each report. Artifacts
+are retained for 14 days and uploaded even when a scan fails. A runner cancellation
+or failure before report generation can leave no artifact; the upload step reports
+that as an error.
 
 Reports contain commit identity, gate status, locations, rule/CVE IDs, severity,
 and remediation information. Secret values, source snippets, Semgrep messages

@@ -32,7 +32,23 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: security-source-${{ github.run_id }}-${{ github.run_attempt }}
+          name: security-source-${{ github.sha }}-${{ github.run_id }}-attempt${{ github.run_attempt }}
           path: security-reports/source/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Semgrep HTML and JSON reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: semgrep-source-${{ github.sha }}-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: security-reports/source/semgrep/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Trivy source HTML and JSON reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: trivy-source-${{ github.sha }}-${{ github.run_id }}-attempt${{ github.run_attempt }}
+          path: security-reports/source/trivy/
           if-no-files-found: error
           retention-days: 14
