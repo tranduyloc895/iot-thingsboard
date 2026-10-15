@@ -1,7 +1,7 @@
 # Security checks in GitHub Actions
 
-The backend and frontend build workflows require `Security scans` to pass before
-building an image. Each image is built once, loaded locally, exported to a runner
+The backend and frontend workflows scan source in the same job before building
+an image. Security results block in enforce mode and allow CI in demo mode. Each image is built once, loaded locally, exported to a runner
 temporary directory, scanned, and only then pushed to GHCR. The GitOps update writes only the dev values on branch `dev`. A separate
 promotion PR changes only prod values on `main`, using the registry digest of
 that same image. See [the approval workflow](gitops-promotion.md).
@@ -19,7 +19,7 @@ run, HTML/JSON artifacts are still uploaded, and security findings or scanner
 errors do not block CI. Build, registry, Git, PR creation, and artifact upload
 failures still fail normally. This mode does not repair or conceal findings.
 
-Use **Settings → Secrets and variables → Actions → Variables** to create or edit
+Use **Settings â†’ Secrets and variables â†’ Actions â†’ Variables** to create or edit
 repository variable `SECURITY_GATE_MODE`:
 
 | Value | CI behavior |
@@ -52,11 +52,10 @@ These checks do not perform authenticated DAST against a running environment.
 
 ## Triggers and required checks
 
-`security.yml` runs on PRs to `main`/`dev`, pushes to those branches, manual runs,
-and daily at 01:23 UTC (08:23 Vietnam time). The daily scan uses the default
-branch and fresh vulnerability data. The build workflows also call it directly,
-so their dependency gate does not rely on a separate workflow finishing first.
-The standalone run can overlap with a build's source scan.
+`security.yml` runs on PRs to `main`/`dev`, pushes to `main`, manual runs, and
+daily at 01:23 UTC (08:23 Vietnam time). The daily scan uses the default branch
+and fresh vulnerability data. Dev builds scan source directly in the build job,
+so a dev push no longer triggers an additional standalone security workflow.
 
 Where supported by your GitHub plan, require **Source security gate** and at
 least one approval for `main`, and restrict direct pushes. Keep bot writes to
@@ -68,35 +67,29 @@ or Docker socket. The publish job retains the permissions used by GitOps.
 
 ## HTML reports
 
-Each Actions run now publishes clearly named artifacts:
-
-| Artifact prefix | Contents |
-| --- | --- |
-| `security-source-` | Combined source report, with links to individual scanner reports |
-| `semgrep-source-` | Semgrep SAST only, HTML + normalized JSON |
-| `trivy-source-` | Trivy dependencies, secrets, IaC only, HTML + normalized JSON |
-| `trivy-image-backend-` / `trivy-image-frontend-` | Image scan report for the component |
-
-Every artifact name ends with `<full-commit-sha>-<run-id>-attempt<attempt>`.
-The run ID separates workflows scanning the same commit, and the attempt separates
-reruns. HTML/JSON filenames additionally include the job ID, for example:
+Each frontend/backend pipeline publishes **one security artifact**:
 
 ```text
-semgrep-source-<full-sha>-38679651208-attempt1-source-security.html
-semgrep-source-<full-sha>-38679651208-attempt1-source-security.json
+security-frontend-<sha12>-<run-id>-attempt<attempt>
+security-backend-<sha12>-<run-id>-attempt<attempt>
 ```
 
-Download the `semgrep-source-*` artifact to see Semgrep directly; open its named
-HTML file. Semgrep previously appeared inside the combined `security-source`
-report; it was already being scanned. Individual reports are also generated when
-the scanner errors or finds nothing, so missing coverage is visible.
+Download once, unzip, and open **index.html**. That single report contains three
+sections: Semgrep SAST, Trivy source/dependencies/secrets/IaC, and Trivy image.
+`report.json` contains the same combined normalized findings. Canonical HTML/JSON
+filenames also embed the full commit, run ID, attempt, and job for traceability;
+`index.html` / `report.json` are convenience aliases. No extra per-tool artifacts
+are uploaded, and automatic Docker `.dockerbuild` artifact upload is disabled.
 
-The combined artifact retains `index.html` / `report.json` as convenience aliases
-alongside uniquely named files. Its `index.html` links to `semgrep/` and `trivy/`.
-Commit, workflow, job, run ID, and attempt are embedded in each report. Artifacts
-are retained for 14 days and uploaded even when a scan fails. A runner cancellation
-or failure before report generation can leave no artifact; the upload step reports
-that as an error.
+The standalone PR/main/scheduled source workflow publishes one
+`security-source-<sha12>-<run-id>-attempt<attempt>` artifact; it contains source
+results only. Its index links to the scanner-specific files inside the same ZIP.
+
+Reports are assembled and uploaded even after a scan/build failure. A phase that
+did not run appears as unavailable rather than passing. Artifacts are retained
+for 14 days. A runner cancellation or failure before report generation can leave
+no artifact; the upload step reports that as an error. Existing historical runs
+keep their old artifacts; the consolidated layout applies to new runs.
 
 Reports contain commit identity, gate status, locations, rule/CVE IDs, severity,
 and remediation information. Secret values, source snippets, Semgrep messages
