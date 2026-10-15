@@ -33,3 +33,7 @@ resources:
 service:
   port: 80
   type: ClusterIP
+
+networkPolicy:
+  enabled: true
+

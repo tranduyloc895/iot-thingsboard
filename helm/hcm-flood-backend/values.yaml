@@ -54,7 +54,7 @@ ingress:
 envFrom: []
 
 networkPolicy:
-  enabled: false
+  enabled: true
   ingressController:
     namespaceSelector:
       kubernetes.io/metadata.name: ingress-nginx

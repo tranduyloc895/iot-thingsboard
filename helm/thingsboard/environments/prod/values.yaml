@@ -54,6 +54,24 @@ externalDatabase:
 externalRedis:
   enabled: true
   existingSecret: thingsboard-redis
+networkPolicy:
+  enabled: true
+  portalNamespace: flood-portal
+  ingressNamespace: ingress-nginx
+  ingressPodSelector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/component: controller
+  monitoring:
+    enabled: true
+    namespace: cmc-monitoring
+    podSelector:
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/component: server
+  dbaas:
+    enabled: true
+    cidr: "10.0.0.0/16"
+  externalAlerts:
+    enabled: true
 fullnameOverride: ''
 global:
   image:

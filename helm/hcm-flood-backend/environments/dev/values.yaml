@@ -45,3 +45,9 @@ resources:
 service:
   port: 8000
   type: ClusterIP
+
+networkPolicy:
+  enabled: true
+  thingsboard:
+    namespace: iot-dev
+
