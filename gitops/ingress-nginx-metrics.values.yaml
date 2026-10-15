@@ -1,8 +1,11 @@
-# Overlay ONLY for existing ingress-nginx release, currently chart 4.15.1.
-# Review with existing values; this restarts controller pods. Approval required.
+# Overlay for existing ingress-nginx chart 4.15.1; preserve current values.
 controller:
   metrics:
     enabled: true
+    service:
+      enabled: true
+      type: ClusterIP
+      clusterIP: None
   podAnnotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "10254"
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '10254'

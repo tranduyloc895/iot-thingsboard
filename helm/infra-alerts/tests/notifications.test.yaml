@@ -1,72 +1,119 @@
 rule_files:
-  - notification-rules.rendered.yaml
+- notification-rules.rendered.yaml
 evaluation_interval: 30s
 tests:
-  - name: HPA scale up fires with the observed replica count
-    interval: 1m
-    input_series:
-      - series: kube_horizontalpodautoscaler_status_current_replicas{namespace="flood-portal-dev",horizontalpodautoscaler="backend"}
-        values: '1 1 3 3 2 2 2 2 2 2 2 2'
-    alert_rule_test:
-      - eval_time: 2m
-        alertname: HcmHpaScaled
-        exp_alerts:
-          - exp_labels: {namespace: flood-portal-dev, horizontalpodautoscaler: backend, severity: info, category: scaling}
-            exp_annotations:
-              summary: 'HPA replica count changed: flood-portal-dev/backend'
-              description: 'Current observed replicas: 3. A scale up/down occurred within the last 5 minutes. Verify workload health.'
-      - eval_time: 11m
-        alertname: HcmHpaScaled
-        exp_alerts: []
-  - name: Node count change reports new count
-    interval: 1m
-    input_series:
-      - series: kube_node_info{node="node-a"}
-        values: '1+0x8'
-      - series: kube_node_info{node="node-b"}
-        values: '_ _ 1+0x6'
-    alert_rule_test:
-      - eval_time: 2m
-        alertname: HcmNodeCountChanged
-        exp_alerts:
-          - exp_labels: {severity: info, category: scaling}
-            exp_annotations:
-              summary: Cluster node count changed
-              description: 'Current nodes: 2. Observed node count changed within 5 minutes; this does not prove which autoscaler/manual action caused it.'
-  - name: CPU requests high waits five minutes and deduplicates scraper copies
-    interval: 1m
-    input_series:
-      - series: container_cpu_usage_seconds_total{namespace="flood-portal-dev",pod="backend",container="app",job="cadvisor"}
-        values: '0+120x12'
-      - series: container_cpu_usage_seconds_total{namespace="flood-portal-dev",pod="backend",container="app",job="cadvisor-copy"}
-        values: '0+120x12'
-      - series: kube_pod_container_resource_requests{namespace="flood-portal-dev",pod="backend",container="app",resource="cpu",job="ksm"}
-        values: '1+0x12'
-      - series: kube_pod_container_resource_requests{namespace="flood-portal-dev",pod="backend",container="app",resource="cpu",job="ksm-copy"}
-        values: '1+0x12'
-    alert_rule_test:
-      - eval_time: 4m
-        alertname: HcmPodCpuAboveRequests
-        exp_alerts: []
-      # A new 5m rate window warms up before the expression crosses the threshold.
-      - eval_time: 7m
-        alertname: HcmPodCpuAboveRequests
-        exp_alerts: []
-      - eval_time: 9m
-        alertname: HcmPodCpuAboveRequests
-        exp_alerts:
-          - exp_labels: {namespace: flood-portal-dev, pod: backend, severity: warning, category: resources}
-            exp_annotations:
-              summary: 'Pod CPU above requests: flood-portal-dev/backend'
-              description: 'Usage/request ratio 2.00 (threshold 1). Requests are scheduling reservations, not hard limits. Review sizing/HPA.'
-  - name: Zero CPU request does not cause infinity alerts
-    interval: 1m
-    input_series:
-      - series: container_cpu_usage_seconds_total{namespace="flood-portal-dev",pod="backend",container="app"}
-        values: '0+120x12'
-      - series: kube_pod_container_resource_requests{namespace="flood-portal-dev",pod="backend",container="app",resource="cpu"}
-        values: '0+0x12'
-    alert_rule_test:
-      - eval_time: 10m
-        alertname: HcmPodCpuAboveRequests
-        exp_alerts: []
+- name: HPA scale up fires with the observed replica count
+  interval: 1m
+  input_series:
+  - series: kube_horizontalpodautoscaler_status_current_replicas{namespace="flood-portal-dev",horizontalpodautoscaler="backend"}
+    values: 1 1 3 3 2 2 2 2 2 2 2 2
+  alert_rule_test:
+  - eval_time: 2m
+    alertname: HcmHpaScaled
+    exp_alerts:
+    - exp_labels:
+        namespace: flood-portal-dev
+        horizontalpodautoscaler: backend
+        severity: info
+        category: scaling
+      exp_annotations:
+        summary: 'HPA replica count changed: flood-portal-dev/backend'
+        description: 'Current observed replicas: 3. A scale up/down occurred within
+          the last 5 minutes. Verify workload health.'
+  - eval_time: 11m
+    alertname: HcmHpaScaled
+    exp_alerts: []
+- name: Node count change reports new count
+  interval: 1m
+  input_series:
+  - series: kube_node_info{node="node-a"}
+    values: 1+0x8
+  - series: kube_node_info{node="node-b"}
+    values: _ _ 1+0x6
+  alert_rule_test:
+  - eval_time: 2m
+    alertname: HcmNodeCountChanged
+    exp_alerts:
+    - exp_labels:
+        severity: info
+        category: scaling
+      exp_annotations:
+        summary: Cluster node count changed
+        description: 'Current nodes: 2. Observed node count changed within 5 minutes;
+          this does not prove which autoscaler/manual action caused it.'
+- name: CPU requests high waits five minutes and deduplicates scraper copies
+  interval: 1m
+  input_series:
+  - series: container_cpu_usage_seconds_total{namespace="flood-portal-dev",pod="backend",container="app",job="cadvisor"}
+    values: 0+120x12
+  - series: container_cpu_usage_seconds_total{namespace="flood-portal-dev",pod="backend",container="app",job="cadvisor-copy"}
+    values: 0+120x12
+  - series: kube_pod_container_resource_requests{namespace="flood-portal-dev",pod="backend",container="app",resource="cpu",job="ksm"}
+    values: 1+0x12
+  - series: kube_pod_container_resource_requests{namespace="flood-portal-dev",pod="backend",container="app",resource="cpu",job="ksm-copy"}
+    values: 1+0x12
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: HcmPodCpuAboveRequests
+    exp_alerts: []
+  - eval_time: 7m
+    alertname: HcmPodCpuAboveRequests
+    exp_alerts: []
+  - eval_time: 9m
+    alertname: HcmPodCpuAboveRequests
+    exp_alerts:
+    - exp_labels:
+        namespace: flood-portal-dev
+        pod: backend
+        severity: warning
+        category: resources
+      exp_annotations:
+        summary: 'Pod CPU above requests: flood-portal-dev/backend'
+        description: Usage/request ratio 2.00 (threshold 1). Requests are scheduling
+          reservations, not hard limits. Review sizing/HPA.
+- name: Zero CPU request does not cause infinity alerts
+  interval: 1m
+  input_series:
+  - series: container_cpu_usage_seconds_total{namespace="flood-portal-dev",pod="backend",container="app"}
+    values: 0+120x12
+  - series: kube_pod_container_resource_requests{namespace="flood-portal-dev",pod="backend",container="app",resource="cpu"}
+    values: 0+0x12
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: HcmPodCpuAboveRequests
+    exp_alerts: []
+- name: Ingress RPS sums independent controller counters and waits for threshold duration
+  interval: 1m
+  input_series:
+  - series: nginx_ingress_controller_requests{namespace="flood-portal-dev",ingress="frontend",instance="controller-a"}
+    values: 0+3600x15
+  - series: nginx_ingress_controller_requests{namespace="flood-portal-dev",ingress="frontend",instance="controller-b"}
+    values: 0+3600x15
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: HcmIngressRequestRateHigh
+    exp_alerts: []
+  - eval_time: 11m
+    alertname: HcmIngressRequestRateHigh
+    exp_alerts:
+    - exp_labels:
+        namespace: flood-portal-dev
+        ingress: frontend
+        severity: warning
+        category: traffic
+      exp_annotations:
+        summary: 'HTTP request rate high: flood-portal-dev/frontend'
+        description: 120.0 requests/sec sustained above 100 RPS. Check traffic, errors
+          and capacity.
+- name: Ingress below threshold stays quiet
+  interval: 1m
+  input_series:
+  - series: nginx_ingress_controller_requests{namespace="flood-portal-dev",ingress="frontend",instance="controller-a"}
+    values: 0+3600x15
+  alert_rule_test:
+  - eval_time: 11m
+    alertname: HcmIngressRequestRateHigh
+    exp_alerts: []
+  - eval_time: 15m
+    alertname: HcmIngressMetricsMissing
+    exp_alerts: []

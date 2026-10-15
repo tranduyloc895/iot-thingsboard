@@ -33,9 +33,25 @@ data:
           'match[]':
             - 'node_cpu_seconds_total{mode="idle"}'
             - '{__name__=~"node_memory_MemTotal_bytes|node_memory_MemAvailable_bytes|kube_node_info"}'
-            - '{__name__=~"container_cpu_usage_seconds_total|container_memory_working_set_bytes|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_horizontalpodautoscaler_status_current_replicas|nginx_ingress_controller_requests",namespace=~"{{ $n.namespaceRegex }}"}'
+            - '{__name__=~"container_cpu_usage_seconds_total|container_memory_working_set_bytes|kube_pod_container_resource_requests|kube_pod_container_resource_limits|kube_horizontalpodautoscaler_status_current_replicas",namespace=~"{{ $n.namespaceRegex }}"}'
         static_configs:
           - targets: [{{ $n.federation.target | quote }}]
+{{- if $n.ingressScrape.enabled }}
+      - job_name: ingress-nginx-requests
+        honor_labels: true
+        dns_sd_configs:
+          - names: [{{ $n.ingressScrape.dnsName | quote }}]
+            type: A
+            port: {{ $n.ingressScrape.port }}
+            refresh_interval: 30s
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: nginx_ingress_controller_requests
+            action: keep
+          - source_labels: [namespace]
+            regex: {{ $n.namespaceRegex | quote }}
+            action: keep
+{{- end }}
   rules.yml: |
 {{ .Files.Get "files/notification-rules.yaml" | replace "__NODE_CPU__" (toString $n.thresholds.nodeCpuPercent) | replace "__NODE_MEMORY__" (toString $n.thresholds.nodeMemoryPercent) | replace "__CPU_REQUESTS__" (toString $n.thresholds.podCpuRequestsRatio) | replace "__MEMORY_REQUESTS__" (toString $n.thresholds.podMemoryRequestsRatio) | replace "__MEMORY_LIMITS__" (toString $n.thresholds.podMemoryLimitsRatio) | replace "__RPS__" (toString $n.thresholds.ingressRequestsPerSecond) | replace "__DURATION__" $n.thresholds.duration | replace "__NAMESPACES__" $n.namespaceRegex | indent 4 }}
   alertmanager.yml: |

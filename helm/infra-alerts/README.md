@@ -72,3 +72,25 @@ Verify CMC Prometheus discovers annotated controller pods and request series
 arrive after real traffic; otherwise configure its scrape discovery explicitly.
 Rollback: restore the prior values/revision via Devtron after review.
 Reference: https://kubernetes.github.io/ingress-nginx/user-guide/monitoring/
+
+## Direct ingress request scrape
+
+CMC source Prometheus only discovers explicitly selected provider jobs; pod scrape
+annotations alone are insufficient in this cluster. Notification Prometheus
+therefore uses DNS A discovery against a headless ingress metrics Service. Each
+controller pod is scraped separately so counter resets/load balancing do not
+corrupt RPS. No Kubernetes API access/service account is needed. Keep only the
+request counter for selected application namespaces. This counter is excluded
+from federation to prevent counting it twice if the provider adds scraping later.
+
+Apply the ingress overlay to the existing 4.15.1 release with current values
+preserved. The newly created metrics Service must be headless (`clusterIP: None`)
+and internal. Existing public HTTP/HTTPS Service and LoadBalancer are unchanged.
+NetworkPolicy permits TCP 10254 only to ingress controller pods in ingress-nginx.
+After sync, verify both ingress targets UP, initialize counters using a few safe
+GET requests, and verify HcmIngressMetricsMissing inactive and RPS rule healthy.
+Do not load-test production to exceed the alert threshold.
+
+Rollback the scrape change via Git/ArgoCD and restore the previous ingress
+release revision. Disabling metrics while keeping scrape enabled intentionally
+triggers telemetry missing alerts.

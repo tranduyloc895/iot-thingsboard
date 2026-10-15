@@ -47,6 +47,11 @@ notifications:
       storageClass: ''
   networkPolicy:
     enabled: true
+  ingressScrape:
+    enabled: true
+    dnsName: ingress-nginx-controller-metrics.ingress-nginx.svc.cluster.local
+    namespace: ingress-nginx
+    port: 10254
 nodeSelector:
   system:
     cmccloud-k8s-nodegroups: system
