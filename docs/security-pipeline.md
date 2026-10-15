@@ -27,6 +27,9 @@ dependencies, so source dependency scanning is required too. IaC scanning covers
 the checked-in configurations and scanner-supported Helm evaluation; this does
 not replace deployment-specific rendering/policy checks or live cluster audits.
 Secret scanning covers the current checkout and image, not all Git history.
+Semgrep excludes `helm/**/templates/**`: these are Go templates rather than plain
+YAML and cause syntax errors in its YAML parser. Trivy still scans those Helm
+templates; the exclusion does not apply to the IaC scan.
 These checks do not perform authenticated DAST against a running environment.
 
 ## Triggers and required checks
@@ -59,6 +62,8 @@ and remediation information. Secret values, source snippets, Semgrep messages
 (which may interpolate source), and raw scanner output are excluded. Findings
 are HTML-escaped. Treat reports as internal security information and limit
 repository/Actions access. Reports are not published to a public website.
+The scan step also prints finding/blocker counts and safe scanner error identifiers
+and exit codes, so a policy failure can be distinguished from an operational error.
 
 ## Maintenance and local verification
 

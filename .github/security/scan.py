@@ -69,6 +69,10 @@ def run_scan(name, image, args, mount, parser):
             for error in data.get("errors", []):
                 details = {key: error[key] for key in ("type", "level", "code")
                            if key in error and re.fullmatch(r"[A-Za-z0-9_ -]{1,80}", str(error[key]))}
+                locations = [span["file"] for span in error.get("spans", [])
+                             if isinstance(span.get("file"), str)]
+                if locations:
+                    details["files"] = locations
                 if details:
                     errors.append(details)
             return dict(name=name, status="error", exit_code=exit_code,
@@ -136,7 +140,9 @@ def main():
              "--skip-dirs", ".git,node_modules,security-reports,.agents,.codex", "/src"], Path.cwd(), trivy_findings),
             run_scan("Semgrep: SAST", SEMGREP,
             ["semgrep", "scan", "--config", "p/security-audit", "--config", "p/owasp-top-ten", "--strict",
-             "--metrics=off", "--disable-version-check", "--json", "--exclude", "security-reports", "/src"],
+             "--metrics=off", "--disable-version-check", "--json", "--exclude", "security-reports",
+             # Go-templated Helm YAML is parsed by Trivy, not Semgrep's YAML parser.
+             "--exclude", "helm/**/templates/**", "/src"],
              Path.cwd(), semgrep_findings)]
     else:
         if not args.image_archive or not args.image_archive.is_file():
