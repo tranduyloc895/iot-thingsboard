@@ -1,0 +1,92 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-netpol
+  labels:
+    app.kubernetes.io/name: hcm-flood-backend
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: hcm-flood-backend
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # 1. Ingress from Frontend in same namespace
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: hcm-flood-frontend
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+    # 2. Ingress from Ingress Controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.ingressController.namespaceSelector | nindent 14 }}
+          {{- if .Values.networkPolicy.ingressController.podSelector }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.ingressController.podSelector | nindent 14 }}
+          {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+    # 3. Prometheus Metrics Scraping
+    {{- if .Values.networkPolicy.monitoring.enabled }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.monitoring.namespaceSelector | nindent 14 }}
+          {{- if .Values.networkPolicy.monitoring.podSelector }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.monitoring.podSelector | nindent 14 }}
+          {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.port }}
+    {{- end }}
+  egress:
+    # 1. DNS Resolution (CoreDNS in kube-system)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 2. ThingsBoard Core API
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.thingsboard.namespace | default "thingsboard" }}
+          {{- if .Values.networkPolicy.thingsboard.podSelector }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.thingsboard.podSelector | nindent 14 }}
+          {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.thingsboard.port | default 8080 }}
+    # 3. External Weather & Marine APIs (HTTPS port 443, excluding private RFC1918 CIDRs)
+    {{- if .Values.networkPolicy.externalApi.enabled }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+{{- end }}

@@ -1,0 +1,179 @@
+{{- if .Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "thingsboard.fullname" . }}-node-netpol
+  labels:
+    {{- include "thingsboard.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "thingsboard.selectorLabels-node" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # 1. Ingress from Portal Backend (flood-portal / iot-dev)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.portalNamespace | default "flood-portal" }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: hcm-flood-backend
+      ports:
+        - protocol: TCP
+          port: 8080
+    # 2. Ingress from Ingress Controller (thingsboard.web-ui.com)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.ingressNamespace | default "ingress-nginx" }}
+          {{- if .Values.networkPolicy.ingressPodSelector }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.ingressPodSelector | nindent 14 }}
+          {{- else }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/component: controller
+          {{- end }}
+      ports:
+        - protocol: TCP
+          port: 8080
+    # 3. Inter-node Cluster RPC communication
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "thingsboard.selectorLabels-node" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 9001
+    # 4. Prometheus Scraper
+    {{- if .Values.networkPolicy.monitoring.enabled }}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicy.monitoring.namespace | default "cmc-monitoring" }}
+          {{- if .Values.networkPolicy.monitoring.podSelector }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicy.monitoring.podSelector | nindent 14 }}
+          {{- end }}
+      ports:
+        - protocol: TCP
+          port: 8080
+    {{- end }}
+  egress:
+    # 1. DNS Resolution (kube-system)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 2. Apache Kafka & ZooKeeper
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kafka
+      ports:
+        - protocol: TCP
+          port: 9092
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: zookeeper
+      ports:
+        - protocol: TCP
+          port: 2181
+    # 3. Inter-node Cluster RPC
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "thingsboard.selectorLabels-node" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 9001
+    # 4. tb-js-executor
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "thingsboard.selectorLabels-jsexecutor" . | nindent 14 }}
+    # 5. CMC DBaaS PostgreSQL (Port 5432) & Redis (Port 6379) in Private VPC Subnet
+    {{- if .Values.networkPolicy.dbaas.enabled }}
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.dbaas.cidr | default "10.0.5.0/24" }}
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+    {{- end }}
+    # 6. Outbound Notifications (Telegram Bot API / SMS Gateway on TCP 443)
+    {{- if .Values.networkPolicy.externalAlerts.enabled }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "thingsboard.fullname" . }}-mqtt-netpol
+  labels:
+    {{- include "thingsboard.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "thingsboard.selectorLabels-mqtt" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # 1. Inbound MQTT traffic from LoadBalancer / NodePort
+    - ports:
+        - protocol: TCP
+          port: 8081
+  egress:
+    # 1. DNS Resolution
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 2. Apache Kafka
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kafka
+      ports:
+        - protocol: TCP
+          port: 9092
+    # 3. CMC DBaaS Redis (Auth Cache)
+    {{- if .Values.networkPolicy.dbaas.enabled }}
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.networkPolicy.dbaas.cidr | default "10.0.5.0/24" }}
+      ports:
+        - protocol: TCP
+          port: 6379
+    {{- end }}
+{{- end }}
