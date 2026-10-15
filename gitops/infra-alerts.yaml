@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hcm-flood-alerts
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/tranduyloc895/iot-thingsboard.git
+    targetRevision: main
+    path: helm/infra-alerts
+    helm:
+      releaseName: hcm-flood-alerts
+      values: |
+        notifications:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cmc-monitoring
+  syncPolicy:
+    syncOptions:
+      - FailOnSharedResource=true

@@ -1,0 +1,52 @@
+nameOverride: ''
+fullnameOverride: hcm-flood-alerts
+notifications:
+  enabled: false
+  cluster: hcm-flood-cmc
+  namespaceRegex: flood-portal|flood-portal-dev|thingsboard|ingress-nginx
+  discordSecretName: discord-infra-webhook
+  discordSecretKey: webhook-url
+  federation:
+    scheme: http
+    target: prometheus-server.cmc-monitoring.svc.cluster.local:80
+    namespace: cmc-monitoring
+    interval: 30s
+  thresholds:
+    nodeCpuPercent: 80
+    nodeMemoryPercent: 85
+    podCpuRequestsRatio: 1
+    podMemoryRequestsRatio: 1
+    podMemoryLimitsRatio: 0.9
+    ingressRequestsPerSecond: 100
+    duration: 5m
+  prometheus:
+    image: prom/prometheus:v3.15.0@sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: '1'
+        memory: 1Gi
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: ''
+  alertmanager:
+    image: prom/alertmanager:v0.34.1@sha256:e9733bafb1bdef9b00e25a21f8f99dc26a22224bf16641ad754d1649f4c3357a
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: ''
+  networkPolicy:
+    enabled: true
+nodeSelector:
+  system:
+    cmccloud-k8s-nodegroups: system
