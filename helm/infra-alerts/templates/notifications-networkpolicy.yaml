@@ -40,6 +40,18 @@ spec:
               {{- include "infra-alerts.selectorLabels" . | nindent 14 }}
       ports:
         - {protocol: TCP, port: 9093}
+    {{- if .Values.notifications.ingressScrape.enabled }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.notifications.ingressScrape.namespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/component: controller
+      ports:
+        - {protocol: TCP, port: {{ .Values.notifications.ingressScrape.port }}}
+    {{- end }}
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
