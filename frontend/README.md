@@ -1,5 +1,14 @@
 # React + Vite
 
+## Pipeline demo
+
+Push a change under `frontend/` to branch `dev` to run Frontend CI. Download the
+single `security-frontend-*` artifact and open `index.html` for Semgrep and Trivy
+results. Demo mode records findings without blocking the build. Image updates
+stay on `dev`; production promotion requires a PR merge into `main`.
+
+See [the promotion workflow](../docs/gitops-promotion.md) for the approval steps.
+
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
 Currently, two official plugins are available:
