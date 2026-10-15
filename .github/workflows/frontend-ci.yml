@@ -9,6 +9,7 @@ on:
       - '.github/workflows/frontend-ci.yml'
       - '.github/workflows/security.yml'
       - '.github/security/**'
+      - '.github/notifications/**'
   workflow_dispatch:
 
 permissions:
@@ -43,6 +44,7 @@ jobs:
         run: echo "name=security-frontend-${GITHUB_SHA:0:12}-${GITHUB_RUN_ID}-attempt${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
 
       - name: Scan dependencies, secrets, IaC and code
+        id: scan-source
         run: python3 .github/security/scan.py source --output security-reports/source
 
       - name: Set up Docker Buildx
@@ -60,6 +62,7 @@ jobs:
             ghcr.io/tranduyloc895/hcm-flood-frontend:${{ github.sha }}
 
       - name: Export exact image for isolated scanning
+        id: export-image
         env:
           IMAGE: ghcr.io/tranduyloc895/hcm-flood-frontend:${{ github.sha }}
         run: |
@@ -67,13 +70,16 @@ jobs:
           docker save "$IMAGE" -o "$RUNNER_TEMP/security-image/image.tar"
 
       - name: Scan image before publishing
+        id: scan-image
         run: python3 .github/security/scan.py image --image-archive "$RUNNER_TEMP/security-image/image.tar" --output security-reports/image
 
       - name: Combine security reports
+        id: security-bundle
         if: always()
         run: python3 .github/security/bundle.py --component frontend --output security-reports
 
       - name: Upload security report
+        id: security-artifact
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -85,6 +91,7 @@ jobs:
           retention-days: 14
 
       - name: Log in to GitHub Container Registry
+        id: registry-login
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
@@ -143,6 +150,7 @@ jobs:
           echo "config_revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Open production promotion PR
+        id: promote-prod
         working-directory: deployment-config
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -188,4 +196,18 @@ jobs:
             printf 'A newer dev build does not change the image in this PR. Merge activates ArgoCD prod sync.\n'
           } > "$body_file"
           pr_url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" --title "Promote frontend to prod: ${IMAGE_TAG:0:12}" --body-file "$body_file")
+          echo "url=$pr_url" >> "$GITHUB_OUTPUT"
           printf 'Production promotion PR: %s\n' "$pr_url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Discord with outcome and report
+        if: always()
+        continue-on-error: true
+        env:
+          DISCORD_CI_WEBHOOK_URL: ${{ secrets.DISCORD_CI_WEBHOOK_URL }}
+          PIPELINE_STATUS: ${{ job.status }}
+          PIPELINE_STEPS_JSON: ${{ toJSON(steps) }}
+          REPORT_ARTIFACT_URL: ${{ steps.security-artifact.outputs.artifact-url }}
+          REPORT_DIR: security-reports
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          PROMOTION_PR_URL: ${{ steps.promote-prod.outputs.url }}
+        run: python3 .github/notifications/discord_ci.py

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: observability
-description: Observability stack for HCM Flood Warning IoT (Grafana + Loki S3 + Promtail + CMC Prometheus Integration)
+description: Observability stack with CMC Prometheus integration and optional Discord alerting
 type: application
-version: 1.0.0
+version: 1.1.0
 appVersion: "1.0.0"

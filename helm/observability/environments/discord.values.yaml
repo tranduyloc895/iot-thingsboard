@@ -1,0 +1,8 @@
+# Apply as an overlay to the EXISTING observability release after creating the Secret.
+# Preserve your current Loki/S3/Grafana and node placement values.
+notifications:
+  enabled: true
+  cluster: hcm-flood-cmc
+  namespaceRegex: "iot-dev|iot-prod"
+  discordSecretName: discord-infra-webhook
+  discordSecretKey: webhook-url

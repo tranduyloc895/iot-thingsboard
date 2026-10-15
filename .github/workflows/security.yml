@@ -30,8 +30,10 @@ jobs:
         id: report-id
         run: echo "name=security-source-${GITHUB_SHA:0:12}-${GITHUB_RUN_ID}-attempt${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
       - name: Scan dependencies, secrets, IaC and code
+        id: scan-source
         run: python3 .github/security/scan.py source --combined-only --output security-reports/source
       - name: Upload HTML and JSON reports
+        id: security-artifact
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -39,3 +41,13 @@ jobs:
           path: security-reports/source/
           if-no-files-found: error
           retention-days: 14
+      - name: Notify Discord with outcome and report
+        if: always() && github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          DISCORD_CI_WEBHOOK_URL: ${{ secrets.DISCORD_CI_WEBHOOK_URL }}
+          PIPELINE_STATUS: ${{ job.status }}
+          PIPELINE_STEPS_JSON: ${{ toJSON(steps) }}
+          REPORT_ARTIFACT_URL: ${{ steps.security-artifact.outputs.artifact-url }}
+          REPORT_DIR: security-reports/source
+        run: python3 .github/notifications/discord_ci.py
