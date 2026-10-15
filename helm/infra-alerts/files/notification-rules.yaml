@@ -1,100 +1,165 @@
 groups:
-  - name: hcm.resources
-    rules:
-      - alert: HcmNodeCpuHigh
-        expr: 100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > __NODE_CPU__
-        for: __DURATION__
-        labels: {severity: warning, category: resources}
-        annotations:
-          summary: 'Node CPU high: {{ $labels.instance }}'
-          description: 'CPU {{ $value | printf "%.1f" }}% sustained above __NODE_CPU__%. Check CPU saturation and workloads on this node.'
-      - alert: HcmNodeMemoryHigh
-        expr: 100 * (1 - max by (instance) (node_memory_MemAvailable_bytes) / max by (instance) (node_memory_MemTotal_bytes)) > __NODE_MEMORY__
-        for: __DURATION__
-        labels: {severity: warning, category: resources}
-        annotations:
-          summary: 'Node memory high: {{ $labels.instance }}'
-          description: 'Memory {{ $value | printf "%.1f" }}% sustained above __NODE_MEMORY__%. Check available memory and memory pressure.'
-      - alert: HcmPodCpuAboveRequests
-        expr: |
-          sum by (namespace, pod) (max by (namespace, pod, container) (rate(container_cpu_usage_seconds_total{namespace=~"__NAMESPACES__",container!="",container!="POD"}[5m])))
-          / (sum by (namespace, pod) (max by (namespace, pod, container) (kube_pod_container_resource_requests{namespace=~"__NAMESPACES__",resource="cpu"})) > 0) > __CPU_REQUESTS__
-        for: __DURATION__
-        labels: {severity: warning, category: resources}
-        annotations:
-          summary: 'Pod CPU above requests: {{ $labels.namespace }}/{{ $labels.pod }}'
-          description: 'Usage/request ratio {{ $value | printf "%.2f" }} (threshold __CPU_REQUESTS__). Requests are scheduling reservations, not hard limits. Review sizing/HPA.'
-      - alert: HcmPodMemoryAboveRequests
-        expr: |
-          sum by (namespace, pod) (max by (namespace, pod, container) (container_memory_working_set_bytes{namespace=~"__NAMESPACES__",container!="",container!="POD"}))
-          / (sum by (namespace, pod) (max by (namespace, pod, container) (kube_pod_container_resource_requests{namespace=~"__NAMESPACES__",resource="memory"})) > 0) > __MEMORY_REQUESTS__
-        for: __DURATION__
-        labels: {severity: warning, category: resources}
-        annotations:
-          summary: 'Pod memory above requests: {{ $labels.namespace }}/{{ $labels.pod }}'
-          description: 'Usage/request ratio {{ $value | printf "%.2f" }} (threshold __MEMORY_REQUESTS__). Review memory sizing and growth.'
-      - alert: HcmPodMemoryNearLimit
-        expr: |
-          max by (namespace, pod) (
-            max by (namespace, pod, container) (container_memory_working_set_bytes{namespace=~"__NAMESPACES__",container!="",container!="POD"})
-            / (max by (namespace, pod, container) (kube_pod_container_resource_limits{namespace=~"__NAMESPACES__",resource="memory"}) > 0)
-          ) > __MEMORY_LIMITS__
-        for: __DURATION__
-        labels: {severity: critical, category: resources}
-        annotations:
-          summary: 'Pod memory near limit: {{ $labels.namespace }}/{{ $labels.pod }}'
-          description: 'Usage/limit ratio {{ $value | printf "%.2f" }} (threshold __MEMORY_LIMITS__). Risk of OOM kill; inspect memory growth.'
-      - alert: HcmIngressRequestRateHigh
-        expr: sum by (namespace, ingress) (rate(nginx_ingress_controller_requests{namespace=~"__NAMESPACES__"}[5m])) > __RPS__
-        for: __DURATION__
-        labels: {severity: warning, category: traffic}
-        annotations:
-          summary: 'HTTP request rate high: {{ $labels.namespace }}/{{ $labels.ingress }}'
-          description: '{{ $value | printf "%.1f" }} requests/sec sustained above __RPS__ RPS. Check traffic, errors and capacity.'
-  - name: hcm.scaling
-    rules:
-      - alert: HcmHpaScaled
-        expr: |
-          max by (namespace, horizontalpodautoscaler) (kube_horizontalpodautoscaler_status_current_replicas{namespace=~"__NAMESPACES__"})
-          and on (namespace, horizontalpodautoscaler)
-          (max by (namespace, horizontalpodautoscaler) (changes(kube_horizontalpodautoscaler_status_current_replicas{namespace=~"__NAMESPACES__"}[5m])) > 0)
-        labels: {severity: info, category: scaling}
-        annotations:
-          summary: 'HPA replica count changed: {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }}'
-          description: 'Current observed replicas: {{ $value }}. A scale up/down occurred within the last 5 minutes. Verify workload health.'
-      - alert: HcmNodeCountChanged
-        expr: count(max by (node) (kube_node_info)) and (changes((count(max by (node) (kube_node_info)))[5m:30s]) > 0)
-        labels: {severity: info, category: scaling}
-        annotations:
-          summary: Cluster node count changed
-          description: 'Current nodes: {{ $value }}. Observed node count changed within 5 minutes; this does not prove which autoscaler/manual action caused it.'
-  - name: hcm.telemetry
-    rules:
-      - alert: HcmFederationUnavailable
-        expr: up{job="cmc-federation"} == 0
-        for: 2m
-        labels: {severity: critical, category: monitoring}
-        annotations:
-          summary: CMC Prometheus federation is unavailable
-          description: Check source URL, network policy, /federate access, and source Prometheus health. Resource alerts may have no current data.
-      - alert: HcmNodeMetricsMissing
-        expr: absent(node_cpu_seconds_total{mode="idle"}) or absent(kube_node_info)
-        for: 10m
-        labels: {severity: warning, category: monitoring}
-        annotations:
-          summary: Required node metrics are missing
-          description: Confirm node-exporter and kube-state-metrics are scraped by CMC Prometheus and allowed by federation selectors.
-      - alert: HcmPodMetricsMissing
-        expr: absent(container_memory_working_set_bytes{namespace=~"__NAMESPACES__",container!="",container!="POD"}) or absent(kube_pod_container_resource_requests{namespace=~"__NAMESPACES__"})
-        for: 10m
-        labels: {severity: warning, category: monitoring}
-        annotations:
-          summary: Required pod usage or requests metrics are missing
-          description: Check cAdvisor, kube-state-metrics and namespace filters. Usage/request alerts cannot evaluate without both metrics.
-      - alert: HcmIngressMetricsMissing
-        expr: absent(nginx_ingress_controller_requests{namespace=~"__NAMESPACES__"})
-        for: 15m
-        labels: {severity: warning, category: monitoring}
-        annotations:
-          summary: HTTP request metrics unavailable
-          description: Enable ingress-nginx metrics and source scraping; generate traffic to initialize request counters. An empty series is not zero traffic.
+- name: hcm.resources
+  rules:
+  - alert: HcmNodeCpuHigh
+    expr: 100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > __NODE_CPU__
+    for: __DURATION__
+    labels:
+      severity: warning
+      category: resources
+    annotations:
+      summary: 'Node CPU high: {{ $labels.instance }}'
+      description: CPU {{ $value | printf "%.1f" }}% sustained above __NODE_CPU__%. Check CPU saturation and workloads on
+        this node.
+  - alert: HcmNodeMemoryHigh
+    expr: 100 * (1 - max by (instance) (node_memory_MemAvailable_bytes) / max by (instance) (node_memory_MemTotal_bytes))
+      > __NODE_MEMORY__
+    for: __DURATION__
+    labels:
+      severity: warning
+      category: resources
+    annotations:
+      summary: 'Node memory high: {{ $labels.instance }}'
+      description: 'Used: {{ with query (printf "max(node_memory_MemTotal_bytes{instance=%[1]q}) - max(node_memory_MemAvailable_bytes{instance=%[1]q})"
+        $labels.instance) }}{{ . | first | value | humanize1024 }}B{{ else }}unavailable{{ end }}. Total: {{ with query (printf
+        "max(node_memory_MemTotal_bytes{instance=%[1]q})" $labels.instance) }}{{ . | first | value | humanize1024 }}B{{ else
+        }}unavailable{{ end }}. Available: {{ with query (printf "max(node_memory_MemAvailable_bytes{instance=%[1]q})" $labels.instance)
+        }}{{ . | first | value | humanize1024 }}B{{ else }}unavailable{{ end }}. Utilization: {{ $value | printf "%.1f" }}%;
+        trigger >__NODE_MEMORY__% for __DURATION__.'
+  - alert: HcmPodCpuAboveRequests
+    expr: 'sum by (namespace, pod) (max by (namespace, pod, container) (rate(container_cpu_usage_seconds_total{namespace=~"__NAMESPACES__",container!="",container!="POD"}[5m])))
+
+      / (sum by (namespace, pod) (max by (namespace, pod, container) (kube_pod_container_resource_requests{namespace=~"__NAMESPACES__",resource="cpu"}))
+      > 0) > __CPU_REQUESTS__
+
+      '
+    for: __DURATION__
+    labels:
+      severity: warning
+      category: resources
+    annotations:
+      summary: 'Pod CPU above requests: {{ $labels.namespace }}/{{ $labels.pod }}'
+      description: 'CPU usage (5m average): {{ with query (printf "1000 * (sum(max by (namespace,pod,container) (rate(container_cpu_usage_seconds_total{namespace=%[1]q,pod=%[2]q,container!=\"\",container!=\"POD\"}[5m]))))"
+        $labels.namespace $labels.pod) }}{{ . | first | value | printf "%.0f" }}mCPU{{ else }}unavailable{{ end }}. Requests:
+        {{ with query (printf "1000 * (sum(max by (namespace,pod,container) (kube_pod_container_resource_requests{namespace=%[1]q,pod=%[2]q,resource=\"cpu\"})))"
+        $labels.namespace $labels.pod) }}{{ . | first | value | printf "%.0f" }}mCPU{{ else }}unavailable{{ end }}. Above
+        requests: {{ with query (printf "1000 * ((sum(max by (namespace,pod,container) (rate(container_cpu_usage_seconds_total{namespace=%[1]q,pod=%[2]q,container!=\"\",container!=\"POD\"}[5m]))))
+        - (sum(max by (namespace,pod,container) (kube_pod_container_resource_requests{namespace=%[1]q,pod=%[2]q,resource=\"cpu\"}))))"
+        $labels.namespace $labels.pod) }}{{ . | first | value | printf "%.0f" }}mCPU{{ else }}unavailable{{ end }}. Usage/requests:
+        {{ $value | humanizePercentage }}; trigger >{{ __CPU_REQUESTS__ | humanizePercentage }} for __DURATION__. Requests
+        are reservations, not hard limits.'
+  - alert: HcmPodMemoryAboveRequests
+    expr: 'sum by (namespace, pod) (max by (namespace, pod, container) (container_memory_working_set_bytes{namespace=~"__NAMESPACES__",container!="",container!="POD"}))
+
+      / (sum by (namespace, pod) (max by (namespace, pod, container) (kube_pod_container_resource_requests{namespace=~"__NAMESPACES__",resource="memory"}))
+      > 0) > __MEMORY_REQUESTS__
+
+      '
+    for: __DURATION__
+    labels:
+      severity: warning
+      category: resources
+    annotations:
+      summary: 'Pod memory above requests: {{ $labels.namespace }}/{{ $labels.pod }}'
+      description: 'Usage: {{ with query (printf "sum(max by (namespace,pod,container) (container_memory_working_set_bytes{namespace=%[1]q,pod=%[2]q,container!=\"\",container!=\"POD\"}))"
+        $labels.namespace $labels.pod) }}{{ . | first | value | humanize1024 }}B{{ else }}unavailable{{ end }}. Requests:
+        {{ with query (printf "sum(max by (namespace,pod,container) (kube_pod_container_resource_requests{namespace=%[1]q,pod=%[2]q,resource=\"memory\"}))"
+        $labels.namespace $labels.pod) }}{{ . | first | value | humanize1024 }}B{{ else }}unavailable{{ end }}. Above requests:
+        {{ with query (printf "(sum(max by (namespace,pod,container) (container_memory_working_set_bytes{namespace=%[1]q,pod=%[2]q,container!=\"\",container!=\"POD\"})))
+        - (sum(max by (namespace,pod,container) (kube_pod_container_resource_requests{namespace=%[1]q,pod=%[2]q,resource=\"memory\"})))"
+        $labels.namespace $labels.pod) }}{{ . | first | value | humanize1024 }}B{{ else }}unavailable{{ end }}. Usage/requests:
+        {{ $value | humanizePercentage }}; trigger >{{ __MEMORY_REQUESTS__ | humanizePercentage }} for __DURATION__. Requests
+        are reservations, not hard limits.'
+  - alert: HcmPodMemoryNearLimit
+    expr: max by (namespace, pod, container) (container_memory_working_set_bytes{namespace=~"__NAMESPACES__",container!="",container!="POD"})
+      / (max by (namespace, pod, container) (kube_pod_container_resource_limits{namespace=~"__NAMESPACES__",resource="memory"})
+      > 0) > __MEMORY_LIMITS__
+    for: __DURATION__
+    labels:
+      severity: critical
+      category: resources
+    annotations:
+      summary: 'Container memory near limit: {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }}'
+      description: 'Usage: {{ with query (printf "max(container_memory_working_set_bytes{namespace=%[1]q,pod=%[2]q,container=%[3]q})"
+        $labels.namespace $labels.pod $labels.container) }}{{ . | first | value | humanize1024 }}B{{ else }}unavailable{{
+        end }}. Limit: {{ with query (printf "max(kube_pod_container_resource_limits{namespace=%[1]q,pod=%[2]q,container=%[3]q,resource=\"memory\"})"
+        $labels.namespace $labels.pod $labels.container) }}{{ . | first | value | humanize1024 }}B{{ else }}unavailable{{
+        end }}. Usage/limit: {{ $value | humanizePercentage }}; trigger >{{ __MEMORY_LIMITS__ | humanizePercentage }} for
+        __DURATION__. Risk of OOM kill.'
+  - alert: HcmIngressRequestRateHigh
+    expr: sum by (namespace, ingress) (rate(nginx_ingress_controller_requests{namespace=~"__NAMESPACES__"}[5m])) > __RPS__
+    for: __DURATION__
+    labels:
+      severity: warning
+      category: traffic
+    annotations:
+      summary: 'HTTP request rate high: {{ $labels.namespace }}/{{ $labels.ingress }}'
+      description: '{{ $value | printf "%.1f" }} requests/sec sustained above __RPS__ RPS. Check traffic, errors and capacity.'
+- name: hcm.scaling
+  rules:
+  - alert: HcmHpaScaled
+    expr: 'max by (namespace, horizontalpodautoscaler) (kube_horizontalpodautoscaler_status_current_replicas{namespace=~"__NAMESPACES__"})
+
+      and on (namespace, horizontalpodautoscaler)
+
+      (max by (namespace, horizontalpodautoscaler) (changes(kube_horizontalpodautoscaler_status_current_replicas{namespace=~"__NAMESPACES__"}[5m]))
+      > 0)
+
+      '
+    labels:
+      severity: info
+      category: scaling
+    annotations:
+      summary: 'HPA replica count changed: {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }}'
+      description: 'Current observed replicas: {{ $value }}. A scale up/down occurred within the last 5 minutes. Verify workload
+        health.'
+  - alert: HcmNodeCountChanged
+    expr: count(max by (node) (kube_node_info)) and (changes((count(max by (node) (kube_node_info)))[5m:30s]) > 0)
+    labels:
+      severity: info
+      category: scaling
+    annotations:
+      summary: Cluster node count changed
+      description: 'Current nodes: {{ $value }}. Observed node count changed within 5 minutes; this does not prove which autoscaler/manual
+        action caused it.'
+- name: hcm.telemetry
+  rules:
+  - alert: HcmFederationUnavailable
+    expr: up{job="cmc-federation"} == 0
+    for: 2m
+    labels:
+      severity: critical
+      category: monitoring
+    annotations:
+      summary: CMC Prometheus federation is unavailable
+      description: Check source URL, network policy, /federate access, and source Prometheus health. Resource alerts may have
+        no current data.
+  - alert: HcmNodeMetricsMissing
+    expr: absent(node_cpu_seconds_total{mode="idle"}) or absent(kube_node_info)
+    for: 10m
+    labels:
+      severity: warning
+      category: monitoring
+    annotations:
+      summary: Required node metrics are missing
+      description: Confirm node-exporter and kube-state-metrics are scraped by CMC Prometheus and allowed by federation selectors.
+  - alert: HcmPodMetricsMissing
+    expr: absent(container_memory_working_set_bytes{namespace=~"__NAMESPACES__",container!="",container!="POD"}) or absent(kube_pod_container_resource_requests{namespace=~"__NAMESPACES__"})
+    for: 10m
+    labels:
+      severity: warning
+      category: monitoring
+    annotations:
+      summary: Required pod usage or requests metrics are missing
+      description: Check cAdvisor, kube-state-metrics and namespace filters. Usage/request alerts cannot evaluate without
+        both metrics.
+  - alert: HcmIngressMetricsMissing
+    expr: absent(nginx_ingress_controller_requests{namespace=~"__NAMESPACES__"})
+    for: 15m
+    labels:
+      severity: warning
+      category: monitoring
+    annotations:
+      summary: HTTP request metrics unavailable
+      description: Enable ingress-nginx metrics and source scraping; generate traffic to initialize request counters. An empty
+        series is not zero traffic.
