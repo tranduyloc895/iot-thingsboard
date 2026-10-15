@@ -94,3 +94,9 @@ Do not load-test production to exceed the alert threshold.
 Rollback the scrape change via Git/ArgoCD and restore the previous ingress
 release revision. Disabling metrics while keeping scrape enabled intentionally
 triggers telemetry missing alerts.
+
+## Resource amounts in notifications
+
+Pod memory alerts include working set usage, total requests, excess and usage/requests percent. CPU alerts show the 5-minute average in mCPU, requests and excess. Node memory includes used/total/available bytes. Near-limit alerts preserve the affected container label and show that container's usage and hard limit; they do not compare pod totals with a single container limit.
+
+Annotation queries use the evaluator's current data, the same deduplication as alert expressions and escaped label selectors. If a follow-up amount query has no sample, it says unavailable rather than zero. Amounts are refreshed at each rule evaluation; a repeated notification is not an immutable snapshot of the first threshold crossing. Alertmanager grouping/repeat intervals remain unchanged.

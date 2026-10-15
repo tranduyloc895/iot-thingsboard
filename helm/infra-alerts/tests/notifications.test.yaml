@@ -69,8 +69,9 @@ tests:
         category: resources
       exp_annotations:
         summary: 'Pod CPU above requests: flood-portal-dev/backend'
-        description: Usage/request ratio 2.00 (threshold 1). Requests are scheduling
-          reservations, not hard limits. Review sizing/HPA.
+        description: 'CPU usage (5m average): 2000mCPU. Requests: 1000mCPU. Above
+          requests: 1000mCPU. Usage/requests: 200%; trigger >100% for 5m. Requests
+          are reservations, not hard limits.'
 - name: Zero CPU request does not cause infinity alerts
   interval: 1m
   input_series:
@@ -117,3 +118,69 @@ tests:
   - eval_time: 15m
     alertname: HcmIngressMetricsMissing
     exp_alerts: []
+- name: Memory amounts deduplicate scrapes and show usage requests excess
+  interval: 1m
+  input_series:
+  - series: container_memory_working_set_bytes{namespace="thingsboard",pod="zookeeper-0",container="zk",job="cadvisor"}
+    values: 805306368+0x10
+  - series: container_memory_working_set_bytes{namespace="thingsboard",pod="zookeeper-0",container="zk",job="copy"}
+    values: 805306368+0x10
+  - series: kube_pod_container_resource_requests{namespace="thingsboard",pod="zookeeper-0",container="zk",resource="memory"}
+    values: 536870912+0x10
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: HcmPodMemoryAboveRequests
+    exp_alerts:
+    - exp_labels:
+        namespace: thingsboard
+        pod: zookeeper-0
+        severity: warning
+        category: resources
+      exp_annotations:
+        summary: 'Pod memory above requests: thingsboard/zookeeper-0'
+        description: 'Usage: 768MiB. Requests: 512MiB. Above requests: 256MiB. Usage/requests:
+          150%; trigger >100% for 5m. Requests are reservations, not hard limits.'
+- name: Memory limit alert reports affected container rather than pod aggregate
+  interval: 1m
+  input_series:
+  - series: container_memory_working_set_bytes{namespace="thingsboard",pod="kafka-0",container="kafka"}
+    values: 1020054732+0x10
+  - series: kube_pod_container_resource_limits{namespace="thingsboard",pod="kafka-0",container="kafka",resource="memory"}
+    values: 1073741824+0x10
+  - series: container_memory_working_set_bytes{namespace="thingsboard",pod="kafka-0",container="sidecar"}
+    values: 1048576+0x10
+  - series: kube_pod_container_resource_limits{namespace="thingsboard",pod="kafka-0",container="sidecar",resource="memory"}
+    values: 104857600+0x10
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: HcmPodMemoryNearLimit
+    exp_alerts:
+    - exp_labels:
+        namespace: thingsboard
+        pod: kafka-0
+        container: kafka
+        severity: critical
+        category: resources
+      exp_annotations:
+        summary: 'Container memory near limit: thingsboard/kafka-0/kafka'
+        description: 'Usage: 972.8MiB. Limit: 1GiB. Usage/limit: 95%; trigger >90%
+          for 5m. Risk of OOM kill.'
+- name: Node memory includes byte amounts and percentage
+  interval: 1m
+  input_series:
+  - series: node_memory_MemTotal_bytes{instance="node-a"}
+    values: 8589934592+0x10
+  - series: node_memory_MemAvailable_bytes{instance="node-a"}
+    values: 1073741824+0x10
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: HcmNodeMemoryHigh
+    exp_alerts:
+    - exp_labels:
+        instance: node-a
+        severity: warning
+        category: resources
+      exp_annotations:
+        summary: 'Node memory high: node-a'
+        description: 'Used: 7GiB. Total: 8GiB. Available: 1GiB. Utilization: 87.5%;
+          trigger >85% for 5m.'
