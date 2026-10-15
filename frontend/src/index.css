@@ -297,3 +297,39 @@ body, html {
     stroke-opacity: 0.45;
   }
 }
+
+/* ─── Realtime Indicator & Telemetry Animations ─── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+@keyframes live-beacon {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.beacon-pulse {
+  animation: live-beacon 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes stream-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.realtime-shimmer {
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.35) 50%, rgba(56, 189, 248, 0.1) 100%);
+  background-size: 200% 100%;
+  animation: stream-shimmer 2.5s infinite;
+}

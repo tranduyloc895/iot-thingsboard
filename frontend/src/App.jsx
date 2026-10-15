@@ -190,6 +190,10 @@ const INITIAL_DATA = {
 export default function App() {
   const [data, setData] = useState(INITIAL_DATA);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [wsStatus, setWsStatus] = useState('CONNECTING'); // 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED'
+  const [lastSyncTime, setLastSyncTime] = useState(null);
+  const [packetCount, setPacketCount] = useState(0);
+  const [isPinging, setIsPinging] = useState(false);
 
   useEffect(() => {
     const host = window.location.hostname || 'localhost';
@@ -200,22 +204,40 @@ export default function App() {
 
     let ws = null;
     let reconnectTimeout = null;
+    let pingTimeout = null;
 
     const connectWS = () => {
       try {
+        setWsStatus('CONNECTING');
         ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          setWsStatus('CONNECTED');
+        };
 
         ws.onmessage = (event) => {
           try {
             const parsed = JSON.parse(event.data);
-            if (parsed && (parsed.devices || parsed.roads || parsed.zones)) {
+            if (parsed && (parsed.devices || parsed.roads || parsed.zones || parsed.summary)) {
               setData(prev => ({
                 ...prev,
                 ...parsed,
                 roads: parsed.roads && parsed.roads.length > 0 ? parsed.roads : prev.roads,
                 zones: parsed.zones && parsed.zones.length > 0 ? parsed.zones : prev.zones,
-                weather: parsed.weather ?? prev.weather
+                weather: parsed.weather ?? prev.weather,
+                summary: parsed.summary ?? prev.summary
               }));
+
+              if (parsed.timestamp) {
+                setLastSyncTime(parsed.timestamp);
+              } else {
+                setLastSyncTime(new Date().toLocaleTimeString('vi-VN'));
+              }
+
+              setPacketCount(c => c + 1);
+              setIsPinging(true);
+              if (pingTimeout) clearTimeout(pingTimeout);
+              pingTimeout = setTimeout(() => setIsPinging(false), 500);
             }
           } catch (e) {
             console.error('Failed to parse WS data:', e);
@@ -223,13 +245,16 @@ export default function App() {
         };
 
         ws.onerror = () => {
+          setWsStatus('DISCONNECTED');
           ws?.close();
         };
 
         ws.onclose = () => {
+          setWsStatus('DISCONNECTED');
           reconnectTimeout = setTimeout(connectWS, 4000);
         };
       } catch (e) {
+        setWsStatus('DISCONNECTED');
         reconnectTimeout = setTimeout(connectWS, 4000);
       }
     };
@@ -239,6 +264,7 @@ export default function App() {
     return () => {
       if (ws) ws.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (pingTimeout) clearTimeout(pingTimeout);
     };
   }, []);
 
@@ -253,7 +279,7 @@ export default function App() {
         selectedLocation={selectedLocation}
       />
 
-      {/* Floating Glassmorphism Sidebar (Dự báo Triều cường + Cảnh báo Đường/Khu vực) */}
+      {/* Floating Glassmorphism Sidebar (Dự báo Triều cường + Cảnh báo Đường/Khu vực + IoT Realtime Summary) */}
       <Sidebar 
         tides={data.tides} 
         severeLocations={data.severe_locations} 
@@ -261,11 +287,19 @@ export default function App() {
         zones={data.zones || []}
         summary={data.summary}
         weather={data.weather}
+        isPinging={isPinging}
+        wsStatus={wsStatus}
         onSelectLocation={(loc) => setSelectedLocation(loc)}
       />
 
-      {/* Floating Top Bar (Live Status, Thời tiết & Clock) */}
-      <TopBar weather={data.weather} />
+      {/* Floating Top Bar (Live Status, Đồng bộ Timestamp, Thời tiết & Clock) */}
+      <TopBar 
+        weather={data.weather} 
+        wsStatus={wsStatus}
+        lastSyncTime={lastSyncTime}
+        packetCount={packetCount}
+        isPinging={isPinging}
+      />
     </div>
   );
 }
