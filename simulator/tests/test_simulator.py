@@ -48,6 +48,20 @@ class SimulatorTests(unittest.TestCase):
             client.subscribe.assert_called_once()
             client.publish.assert_called_once()
 
+    def test_lost_provision_response_keeps_requested_token(self):
+        import json
+        with tempfile.TemporaryDirectory() as state:
+            module = load(0, state)
+            client = MagicMock()
+            completed = MagicMock()
+            completed.wait.return_value = False
+            client.loop_start.side_effect = lambda: client.on_connect(client, None, {}, 0)
+            with patch.object(module.mqtt, 'Client', return_value=client), patch.object(module.threading, 'Event', return_value=completed), patch('builtins.print'):
+                self.assertIsNone(module.provision_device())
+            requested = json.loads(client.publish.call_args.args[1])
+            self.assertEqual(module.load_token(), requested['token'])
+            self.assertEqual(requested['credentialsType'], 'ACCESS_TOKEN')
+
     def test_publish_failure_is_not_reported_as_success_and_client_stops(self):
         with tempfile.TemporaryDirectory() as state:
             module = load(0, state)

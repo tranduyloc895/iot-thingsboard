@@ -3,6 +3,7 @@ import json
 import random
 import os
 import threading
+import secrets
 from pathlib import Path
 import paho.mqtt.client as mqtt
 
@@ -955,6 +956,10 @@ def save_token(token):
 
 
 def provision_device():
+    # Persist a client-chosen token before the one-shot request. If the response
+    # is lost after device creation, the next attempt can authenticate with it.
+    requested_token = secrets.token_urlsafe(32)
+    save_token(requested_token)
     client = mqtt.Client()
     client.username_pw_set("provision")
     completed = threading.Event()
@@ -970,7 +975,8 @@ def provision_device():
             client.subscribe("/provision/response", qos=1)
             client.publish("/provision/request", json.dumps({
                 "deviceName": DEVICE_NAME, "provisionDeviceKey": PROVISION_KEY,
-                "provisionDeviceSecret": PROVISION_SECRET}), qos=1)
+                "provisionDeviceSecret": PROVISION_SECRET,
+                "credentialsType": "ACCESS_TOKEN", "token": requested_token}), qos=1)
 
     def on_message(client, userdata, message):
         try:
