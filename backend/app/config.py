@@ -7,9 +7,9 @@ class Settings(BaseSettings):
     PORT: int = int(os.getenv("PORT", "8000"))
     
     # ThingsBoard Connection
-    THINGSBOARD_URL: str = os.getenv("THINGSBOARD_URL", "http://iot-thingsboard.thingsboard.svc.cluster.local:8080")
-    THINGSBOARD_USERNAME: str = os.getenv("THINGSBOARD_USERNAME", "tenant@thingsboard.org")
-    THINGSBOARD_PASSWORD: str = os.getenv("THINGSBOARD_PASSWORD", "tenant")
+    THINGSBOARD_URL: str = os.getenv("THINGSBOARD_URL", "http://iot-thingsboard-node.thingsboard.svc.cluster.local:8080")
+    THINGSBOARD_USERNAME: str = os.getenv("THINGSBOARD_USERNAME", "")
+    THINGSBOARD_PASSWORD: str = os.getenv("THINGSBOARD_PASSWORD", "")
     
     # HCMC Geographical reference
     HCMC_LAT: float = 10.7769
@@ -21,5 +21,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()

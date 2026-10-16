@@ -18,7 +18,7 @@ service:
 env:
   APP_ENV: "production"
   PORT: "8000"
-  THINGSBOARD_URL: "http://iot-thingsboard.thingsboard.svc.cluster.local:8080"
+  THINGSBOARD_URL: "http://iot-thingsboard-node.thingsboard.svc.cluster.local:8080"
 
 resources:
   limits:

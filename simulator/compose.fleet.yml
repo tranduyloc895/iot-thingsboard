@@ -1,0 +1,753 @@
+services:
+  station-001:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '0'
+      DEVICE_NAME: VN-HCM-001
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-002:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '1'
+      DEVICE_NAME: VN-HCM-002
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-003:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '2'
+      DEVICE_NAME: VN-HCM-003
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-004:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '3'
+      DEVICE_NAME: VN-HCM-004
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-005:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '4'
+      DEVICE_NAME: VN-HCM-005
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-006:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '5'
+      DEVICE_NAME: VN-HCM-006
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-007:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '6'
+      DEVICE_NAME: VN-HCM-007
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-008:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '7'
+      DEVICE_NAME: VN-HCM-008
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-009:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '8'
+      DEVICE_NAME: VN-HCM-009
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-010:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '9'
+      DEVICE_NAME: VN-HCM-010
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-011:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '10'
+      DEVICE_NAME: VN-HCM-011
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-012:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '11'
+      DEVICE_NAME: VN-HCM-012
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-013:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '12'
+      DEVICE_NAME: VN-HCM-013
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-014:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '13'
+      DEVICE_NAME: VN-HCM-014
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-015:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '14'
+      DEVICE_NAME: VN-HCM-015
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-016:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '15'
+      DEVICE_NAME: VN-HCM-016
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-017:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '16'
+      DEVICE_NAME: VN-HCM-017
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-018:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '17'
+      DEVICE_NAME: VN-HCM-018
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-019:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '18'
+      DEVICE_NAME: VN-HCM-019
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-020:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '19'
+      DEVICE_NAME: VN-HCM-020
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-021:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '20'
+      DEVICE_NAME: VN-HCM-021
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-022:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '21'
+      DEVICE_NAME: VN-HCM-022
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-023:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '22'
+      DEVICE_NAME: VN-HCM-023
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-024:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '23'
+      DEVICE_NAME: VN-HCM-024
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-025:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '24'
+      DEVICE_NAME: VN-HCM-025
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-026:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '25'
+      DEVICE_NAME: VN-HCM-026
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-027:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '26'
+      DEVICE_NAME: VN-HCM-027
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-028:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '27'
+      DEVICE_NAME: VN-HCM-028
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-029:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '28'
+      DEVICE_NAME: VN-HCM-029
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-030:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '29'
+      DEVICE_NAME: VN-HCM-030
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-031:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '30'
+      DEVICE_NAME: VN-HCM-031
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-032:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '31'
+      DEVICE_NAME: VN-HCM-032
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-033:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '32'
+      DEVICE_NAME: VN-HCM-033
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-034:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '33'
+      DEVICE_NAME: VN-HCM-034
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-035:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '34'
+      DEVICE_NAME: VN-HCM-035
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-036:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '35'
+      DEVICE_NAME: VN-HCM-036
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-037:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '36'
+      DEVICE_NAME: VN-HCM-037
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-038:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '37'
+      DEVICE_NAME: VN-HCM-038
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-039:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '38'
+      DEVICE_NAME: VN-HCM-039
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-040:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '39'
+      DEVICE_NAME: VN-HCM-040
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-041:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '40'
+      DEVICE_NAME: VN-HCM-041
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-042:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '41'
+      DEVICE_NAME: VN-HCM-042
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-043:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '42'
+      DEVICE_NAME: VN-HCM-043
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-044:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '43'
+      DEVICE_NAME: VN-HCM-044
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-045:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '44'
+      DEVICE_NAME: VN-HCM-045
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-046:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '45'
+      DEVICE_NAME: VN-HCM-046
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-047:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '46'
+      DEVICE_NAME: VN-HCM-047
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-048:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '47'
+      DEVICE_NAME: VN-HCM-048
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-049:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '48'
+      DEVICE_NAME: VN-HCM-049
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+  station-050:
+    build: .
+    image: hcm-station-simulator:local
+    restart: unless-stopped
+    volumes:
+      - simulator-state:/state
+    environment:
+      PYTHONUNBUFFERED: '1'
+      NODE_INDEX: '49'
+      DEVICE_NAME: VN-HCM-050
+      STATE_DIR: /state
+      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}
+      PORT: ${PORT:-1883}
+      PROVISION_KEY: ${PROVISION_KEY:-}
+      PROVISION_SECRET: ${PROVISION_SECRET:-}
+volumes:
+  simulator-state:

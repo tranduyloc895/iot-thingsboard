@@ -1,10 +1,21 @@
-import random
+import asyncio
+import logging
+import math
+import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 import httpx
 from ..config import settings
 from ..models.schemas import DeviceTelemetry, SevereLocation, CitySummary, RoadNode, FloodedRoad, FloodZone
+
+VN_TZ = timezone(timedelta(hours=7))
+
+def get_vn_now() -> datetime:
+    return datetime.now(VN_TZ)
+
+def get_vn_now_str() -> str:
+    return get_vn_now().strftime("%Y-%m-%d %H:%M:%S")
 
 ROADS_DATA: List[Dict[str, Any]] = [
     {
@@ -13,7 +24,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
         "district": "Gò Vấp - Tân Bình",
         "length_km": 3.4,
         "type": "ROAD",
-        "base_water": 52.0,
         "max_water_cm": 52.0,
         "avg_water_cm": 35.4,
         "severity": "CRITICAL",
@@ -240,9 +250,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.62943,
                 "latitude": 10.82346,
                 "longitude": 106.62943,
-                "base_water": 20.8,
-                "water_level_cm": 20.8,
-                "status": "ALERT"
             },
             {
                 "id": "node-02",
@@ -251,9 +258,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.6315,
                 "latitude": 10.82712,
                 "longitude": 106.6315,
-                "base_water": 39.0,
-                "water_level_cm": 39.0,
-                "status": "WARNING"
             },
             {
                 "id": "node-03",
@@ -262,9 +266,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.63422,
                 "latitude": 10.83283,
                 "longitude": 106.63422,
-                "base_water": 52.0,
-                "water_level_cm": 52.0,
-                "status": "CRITICAL"
             },
             {
                 "id": "node-04",
@@ -273,9 +274,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.63708,
                 "latitude": 10.83905,
                 "longitude": 106.63708,
-                "base_water": 41.6,
-                "water_level_cm": 41.6,
-                "status": "WARNING"
             },
             {
                 "id": "node-05",
@@ -284,9 +282,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.64011,
                 "latitude": 10.84429,
                 "longitude": 106.64011,
-                "base_water": 23.4,
-                "water_level_cm": 23.4,
-                "status": "ALERT"
             }
         ]
     },
@@ -296,7 +291,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
         "district": "Quận 12",
         "length_km": 4.1,
         "type": "ROAD",
-        "base_water": 50.0,
         "max_water_cm": 50.0,
         "avg_water_cm": 34.0,
         "severity": "CRITICAL",
@@ -547,9 +541,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.62674,
                 "latitude": 10.82783,
                 "longitude": 106.62674,
-                "base_water": 20.0,
-                "water_level_cm": 20.0,
-                "status": "ALERT"
             },
             {
                 "id": "node-07",
@@ -558,9 +549,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.62882,
                 "latitude": 10.83544,
                 "longitude": 106.62882,
-                "base_water": 37.5,
-                "water_level_cm": 37.5,
-                "status": "WARNING"
             },
             {
                 "id": "node-08",
@@ -569,9 +557,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.63091,
                 "latitude": 10.84278,
                 "longitude": 106.63091,
-                "base_water": 50.0,
-                "water_level_cm": 50.0,
-                "status": "CRITICAL"
             },
             {
                 "id": "node-09",
@@ -580,9 +565,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.63654,
                 "latitude": 10.84979,
                 "longitude": 106.63654,
-                "base_water": 40.0,
-                "water_level_cm": 40.0,
-                "status": "WARNING"
             },
             {
                 "id": "node-10",
@@ -591,9 +573,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.63941,
                 "latitude": 10.85647,
                 "longitude": 106.63941,
-                "base_water": 22.5,
-                "water_level_cm": 22.5,
-                "status": "ALERT"
             }
         ]
     },
@@ -603,7 +582,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
         "district": "Quận 7",
         "length_km": 4.8,
         "type": "ROAD",
-        "base_water": 56.0,
         "max_water_cm": 56.0,
         "avg_water_cm": 38.1,
         "severity": "CRITICAL",
@@ -738,9 +716,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.73034,
                 "latitude": 10.73791,
                 "longitude": 106.73034,
-                "base_water": 22.4,
-                "water_level_cm": 22.4,
-                "status": "ALERT"
             },
             {
                 "id": "node-12",
@@ -749,9 +724,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7298,
                 "latitude": 10.74141,
                 "longitude": 106.7298,
-                "base_water": 42.0,
-                "water_level_cm": 42.0,
-                "status": "WARNING"
             },
             {
                 "id": "node-13",
@@ -760,9 +732,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.72954,
                 "latitude": 10.74375,
                 "longitude": 106.72954,
-                "base_water": 56.0,
-                "water_level_cm": 56.0,
-                "status": "CRITICAL"
             },
             {
                 "id": "node-14",
@@ -771,9 +740,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.72887,
                 "latitude": 10.74832,
                 "longitude": 106.72887,
-                "base_water": 44.8,
-                "water_level_cm": 44.8,
-                "status": "WARNING"
             },
             {
                 "id": "node-15",
@@ -782,9 +748,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.72855,
                 "latitude": 10.75265,
                 "longitude": 106.72855,
-                "base_water": 25.2,
-                "water_level_cm": 25.2,
-                "status": "ALERT"
             }
         ]
     },
@@ -794,7 +757,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
         "district": "Quận 7",
         "length_km": 3.6,
         "type": "ROAD",
-        "base_water": 53.0,
         "max_water_cm": 53.0,
         "avg_water_cm": 36.1,
         "severity": "CRITICAL",
@@ -1061,9 +1023,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.69107,
                 "latitude": 10.75101,
                 "longitude": 106.69107,
-                "base_water": 21.2,
-                "water_level_cm": 21.2,
-                "status": "ALERT"
             },
             {
                 "id": "node-17",
@@ -1072,9 +1031,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.69849,
                 "latitude": 10.75172,
                 "longitude": 106.69849,
-                "base_water": 39.8,
-                "water_level_cm": 39.8,
-                "status": "WARNING"
             },
             {
                 "id": "node-18",
@@ -1083,9 +1039,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.70669,
                 "latitude": 10.7518,
                 "longitude": 106.70669,
-                "base_water": 53.0,
-                "water_level_cm": 53.0,
-                "status": "CRITICAL"
             },
             {
                 "id": "node-19",
@@ -1094,9 +1047,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.71725,
                 "latitude": 10.75189,
                 "longitude": 106.71725,
-                "base_water": 42.4,
-                "water_level_cm": 42.4,
-                "status": "WARNING"
             },
             {
                 "id": "node-20",
@@ -1105,9 +1055,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.72229,
                 "latitude": 10.75749,
                 "longitude": 106.72229,
-                "base_water": 23.9,
-                "water_level_cm": 23.9,
-                "status": "ALERT"
             }
         ]
     },
@@ -1117,7 +1064,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
         "district": "Bình Thạnh",
         "length_km": 3.2,
         "type": "ROAD",
-        "base_water": 46.0,
         "max_water_cm": 46.0,
         "avg_water_cm": 31.3,
         "severity": "WARNING",
@@ -1260,9 +1206,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7245,
                 "latitude": 10.79802,
                 "longitude": 106.7245,
-                "base_water": 18.4,
-                "water_level_cm": 18.4,
-                "status": "SAFE"
             },
             {
                 "id": "node-22",
@@ -1271,9 +1214,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.71455,
                 "latitude": 10.78905,
                 "longitude": 106.71455,
-                "base_water": 34.5,
-                "water_level_cm": 34.5,
-                "status": "ALERT"
             },
             {
                 "id": "node-23",
@@ -1282,9 +1222,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.71481,
                 "latitude": 10.78932,
                 "longitude": 106.71481,
-                "base_water": 46.0,
-                "water_level_cm": 46.0,
-                "status": "WARNING"
             },
             {
                 "id": "node-24",
@@ -1293,9 +1230,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.70905,
                 "latitude": 10.78691,
                 "longitude": 106.70905,
-                "base_water": 36.8,
-                "water_level_cm": 36.8,
-                "status": "WARNING"
             },
             {
                 "id": "node-25",
@@ -1304,9 +1238,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.70936,
                 "latitude": 10.7868,
                 "longitude": 106.70936,
-                "base_water": 20.7,
-                "water_level_cm": 20.7,
-                "status": "ALERT"
             }
         ]
     },
@@ -1316,7 +1247,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
         "district": "Bình Thạnh",
         "length_km": 2.8,
         "type": "ROAD",
-        "base_water": 44.0,
         "max_water_cm": 44.0,
         "avg_water_cm": 29.9,
         "severity": "WARNING",
@@ -1443,9 +1373,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.71262,
                 "latitude": 10.80993,
                 "longitude": 106.71262,
-                "base_water": 17.6,
-                "water_level_cm": 17.6,
-                "status": "SAFE"
             },
             {
                 "id": "node-27",
@@ -1454,9 +1381,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7159,
                 "latitude": 10.80781,
                 "longitude": 106.7159,
-                "base_water": 33.0,
-                "water_level_cm": 33.0,
-                "status": "ALERT"
             },
             {
                 "id": "node-28",
@@ -1465,9 +1389,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7204,
                 "latitude": 10.8061,
                 "longitude": 106.7204,
-                "base_water": 44.0,
-                "water_level_cm": 44.0,
-                "status": "WARNING"
             },
             {
                 "id": "node-29",
@@ -1476,9 +1397,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7226,
                 "latitude": 10.80209,
                 "longitude": 106.7226,
-                "base_water": 35.2,
-                "water_level_cm": 35.2,
-                "status": "WARNING"
             },
             {
                 "id": "node-30",
@@ -1487,9 +1405,6 @@ ROADS_DATA: List[Dict[str, Any]] = [
                 "lon": 106.72392,
                 "latitude": 10.79914,
                 "longitude": 106.72392,
-                "base_water": 19.8,
-                "water_level_cm": 19.8,
-                "status": "SAFE"
             }
         ]
     }
@@ -1501,7 +1416,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
         "name": "Khu vực Bán đảo Thảo Điền",
         "district": "TP. Thủ Đức",
         "type": "ZONE",
-        "base_water": 54.0,
         "max_water_cm": 54.0,
         "avg_water_cm": 37.8,
         "severity": "CRITICAL",
@@ -1549,9 +1463,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.738,
                 "latitude": 10.8015,
                 "longitude": 106.738,
-                "base_water": 20.0,
-                "water_level_cm": 20.0,
-                "status": "ALERT"
             },
             {
                 "id": "zone-01-node-02",
@@ -1560,9 +1471,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7345,
                 "latitude": 10.803,
                 "longitude": 106.7345,
-                "base_water": 38.0,
-                "water_level_cm": 38.0,
-                "status": "WARNING"
             },
             {
                 "id": "zone-01-node-03",
@@ -1571,9 +1479,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7321,
                 "latitude": 10.8035,
                 "longitude": 106.7321,
-                "base_water": 54.0,
-                "water_level_cm": 54.0,
-                "status": "CRITICAL"
             },
             {
                 "id": "zone-01-node-04",
@@ -1582,9 +1487,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.73,
                 "latitude": 10.8075,
                 "longitude": 106.73,
-                "base_water": 45.0,
-                "water_level_cm": 45.0,
-                "status": "WARNING"
             },
             {
                 "id": "zone-01-node-05",
@@ -1593,9 +1495,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.728,
                 "latitude": 10.812,
                 "longitude": 106.728,
-                "base_water": 32.0,
-                "water_level_cm": 32.0,
-                "status": "ALERT"
             }
         ]
     },
@@ -1604,7 +1503,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
         "name": "Khu vực Thung lũng Chợ Thủ Đức",
         "district": "TP. Thủ Đức",
         "type": "ZONE",
-        "base_water": 60.0,
         "max_water_cm": 60.0,
         "avg_water_cm": 39.6,
         "severity": "CRITICAL",
@@ -1648,9 +1546,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7625,
                 "latitude": 10.8495,
                 "longitude": 106.7625,
-                "base_water": 26.0,
-                "water_level_cm": 26.0,
-                "status": "ALERT"
             },
             {
                 "id": "zone-02-node-02",
@@ -1659,9 +1554,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.76,
                 "latitude": 10.851,
                 "longitude": 106.76,
-                "base_water": 48.0,
-                "water_level_cm": 48.0,
-                "status": "WARNING"
             },
             {
                 "id": "zone-02-node-03",
@@ -1670,9 +1562,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7582,
                 "latitude": 10.8525,
                 "longitude": 106.7582,
-                "base_water": 60.0,
-                "water_level_cm": 60.0,
-                "status": "CRITICAL"
             },
             {
                 "id": "zone-02-node-04",
@@ -1681,9 +1570,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7565,
                 "latitude": 10.8535,
                 "longitude": 106.7565,
-                "base_water": 42.0,
-                "water_level_cm": 42.0,
-                "status": "WARNING"
             },
             {
                 "id": "zone-02-node-05",
@@ -1692,9 +1578,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.7535,
                 "latitude": 10.855,
                 "longitude": 106.7535,
-                "base_water": 22.0,
-                "water_level_cm": 22.0,
-                "status": "ALERT"
             }
         ]
     },
@@ -1703,7 +1586,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
         "name": "Khu vực Trũng thấp Cây Trâm - Làng Hoa",
         "district": "Gò Vấp",
         "type": "ZONE",
-        "base_water": 52.0,
         "max_water_cm": 52.0,
         "avg_water_cm": 34.8,
         "severity": "CRITICAL",
@@ -1743,9 +1625,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.679,
                 "latitude": 10.844,
                 "longitude": 106.679,
-                "base_water": 20.0,
-                "water_level_cm": 20.0,
-                "status": "ALERT"
             },
             {
                 "id": "zone-03-node-02",
@@ -1754,9 +1633,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.675,
                 "latitude": 10.84,
                 "longitude": 106.675,
-                "base_water": 36.0,
-                "water_level_cm": 36.0,
-                "status": "WARNING"
             },
             {
                 "id": "zone-03-node-03",
@@ -1765,9 +1641,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.672,
                 "latitude": 10.835,
                 "longitude": 106.672,
-                "base_water": 52.0,
-                "water_level_cm": 52.0,
-                "status": "CRITICAL"
             },
             {
                 "id": "zone-03-node-04",
@@ -1776,9 +1649,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.666,
                 "latitude": 10.8385,
                 "longitude": 106.666,
-                "base_water": 42.0,
-                "water_level_cm": 42.0,
-                "status": "WARNING"
             },
             {
                 "id": "zone-03-node-05",
@@ -1787,9 +1657,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.661,
                 "latitude": 10.841,
                 "longitude": 106.661,
-                "base_water": 24.0,
-                "water_level_cm": 24.0,
-                "status": "ALERT"
             }
         ]
     },
@@ -1798,7 +1665,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
         "name": "Khu vực Lưu vực Bến Mễ Cốc - Hồ Học Lãm",
         "district": "Bình Tân & Q.8",
         "type": "ZONE",
-        "base_water": 55.0,
         "max_water_cm": 55.0,
         "avg_water_cm": 37.8,
         "severity": "CRITICAL",
@@ -1838,9 +1704,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.628,
                 "latitude": 10.71,
                 "longitude": 106.628,
-                "base_water": 28.0,
-                "water_level_cm": 28.0,
-                "status": "ALERT"
             },
             {
                 "id": "zone-04-node-02",
@@ -1849,9 +1712,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.623,
                 "latitude": 10.714,
                 "longitude": 106.623,
-                "base_water": 44.0,
-                "water_level_cm": 44.0,
-                "status": "WARNING"
             },
             {
                 "id": "zone-04-node-03",
@@ -1860,9 +1720,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.6185,
                 "latitude": 10.718,
                 "longitude": 106.6185,
-                "base_water": 55.0,
-                "water_level_cm": 55.0,
-                "status": "CRITICAL"
             },
             {
                 "id": "zone-04-node-04",
@@ -1871,9 +1728,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.615,
                 "latitude": 10.723,
                 "longitude": 106.615,
-                "base_water": 40.0,
-                "water_level_cm": 40.0,
-                "status": "WARNING"
             },
             {
                 "id": "zone-04-node-05",
@@ -1882,9 +1736,6 @@ ZONES_DATA: List[Dict[str, Any]] = [
                 "lon": 106.611,
                 "latitude": 10.731,
                 "longitude": 106.611,
-                "base_water": 22.0,
-                "water_level_cm": 22.0,
-                "status": "ALERT"
             }
         ]
     }
@@ -1905,9 +1756,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.62943,
         "latitude": 10.82346,
         "longitude": 106.62943,
-        "base_water": 20.8,
-        "water_level_cm": 20.8,
-        "status": "ALERT"
     },
     {
         "node_num": 2,
@@ -1923,9 +1771,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.6315,
         "latitude": 10.82712,
         "longitude": 106.6315,
-        "base_water": 39.0,
-        "water_level_cm": 39.0,
-        "status": "WARNING"
     },
     {
         "node_num": 3,
@@ -1941,9 +1786,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.63422,
         "latitude": 10.83283,
         "longitude": 106.63422,
-        "base_water": 52.0,
-        "water_level_cm": 52.0,
-        "status": "CRITICAL"
     },
     {
         "node_num": 4,
@@ -1959,9 +1801,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.63708,
         "latitude": 10.83905,
         "longitude": 106.63708,
-        "base_water": 41.6,
-        "water_level_cm": 41.6,
-        "status": "WARNING"
     },
     {
         "node_num": 5,
@@ -1977,9 +1816,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.64011,
         "latitude": 10.84429,
         "longitude": 106.64011,
-        "base_water": 23.4,
-        "water_level_cm": 23.4,
-        "status": "ALERT"
     },
     {
         "node_num": 6,
@@ -1995,9 +1831,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.62674,
         "latitude": 10.82783,
         "longitude": 106.62674,
-        "base_water": 20.0,
-        "water_level_cm": 20.0,
-        "status": "ALERT"
     },
     {
         "node_num": 7,
@@ -2013,9 +1846,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.62882,
         "latitude": 10.83544,
         "longitude": 106.62882,
-        "base_water": 37.5,
-        "water_level_cm": 37.5,
-        "status": "WARNING"
     },
     {
         "node_num": 8,
@@ -2031,9 +1861,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.63091,
         "latitude": 10.84278,
         "longitude": 106.63091,
-        "base_water": 50.0,
-        "water_level_cm": 50.0,
-        "status": "CRITICAL"
     },
     {
         "node_num": 9,
@@ -2049,9 +1876,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.63654,
         "latitude": 10.84979,
         "longitude": 106.63654,
-        "base_water": 40.0,
-        "water_level_cm": 40.0,
-        "status": "WARNING"
     },
     {
         "node_num": 10,
@@ -2067,9 +1891,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.63941,
         "latitude": 10.85647,
         "longitude": 106.63941,
-        "base_water": 22.5,
-        "water_level_cm": 22.5,
-        "status": "ALERT"
     },
     {
         "node_num": 11,
@@ -2085,9 +1906,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.73034,
         "latitude": 10.73791,
         "longitude": 106.73034,
-        "base_water": 22.4,
-        "water_level_cm": 22.4,
-        "status": "ALERT"
     },
     {
         "node_num": 12,
@@ -2103,9 +1921,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7298,
         "latitude": 10.74141,
         "longitude": 106.7298,
-        "base_water": 42.0,
-        "water_level_cm": 42.0,
-        "status": "WARNING"
     },
     {
         "node_num": 13,
@@ -2121,9 +1936,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.72954,
         "latitude": 10.74375,
         "longitude": 106.72954,
-        "base_water": 56.0,
-        "water_level_cm": 56.0,
-        "status": "CRITICAL"
     },
     {
         "node_num": 14,
@@ -2139,9 +1951,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.72887,
         "latitude": 10.74832,
         "longitude": 106.72887,
-        "base_water": 44.8,
-        "water_level_cm": 44.8,
-        "status": "WARNING"
     },
     {
         "node_num": 15,
@@ -2157,9 +1966,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.72855,
         "latitude": 10.75265,
         "longitude": 106.72855,
-        "base_water": 25.2,
-        "water_level_cm": 25.2,
-        "status": "ALERT"
     },
     {
         "node_num": 16,
@@ -2175,9 +1981,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.69107,
         "latitude": 10.75101,
         "longitude": 106.69107,
-        "base_water": 21.2,
-        "water_level_cm": 21.2,
-        "status": "ALERT"
     },
     {
         "node_num": 17,
@@ -2193,9 +1996,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.69849,
         "latitude": 10.75172,
         "longitude": 106.69849,
-        "base_water": 39.8,
-        "water_level_cm": 39.8,
-        "status": "WARNING"
     },
     {
         "node_num": 18,
@@ -2211,9 +2011,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.70669,
         "latitude": 10.7518,
         "longitude": 106.70669,
-        "base_water": 53.0,
-        "water_level_cm": 53.0,
-        "status": "CRITICAL"
     },
     {
         "node_num": 19,
@@ -2229,9 +2026,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.71725,
         "latitude": 10.75189,
         "longitude": 106.71725,
-        "base_water": 42.4,
-        "water_level_cm": 42.4,
-        "status": "WARNING"
     },
     {
         "node_num": 20,
@@ -2247,9 +2041,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.72229,
         "latitude": 10.75749,
         "longitude": 106.72229,
-        "base_water": 23.9,
-        "water_level_cm": 23.9,
-        "status": "ALERT"
     },
     {
         "node_num": 21,
@@ -2265,9 +2056,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7245,
         "latitude": 10.79802,
         "longitude": 106.7245,
-        "base_water": 18.4,
-        "water_level_cm": 18.4,
-        "status": "SAFE"
     },
     {
         "node_num": 22,
@@ -2283,9 +2071,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.71455,
         "latitude": 10.78905,
         "longitude": 106.71455,
-        "base_water": 34.5,
-        "water_level_cm": 34.5,
-        "status": "ALERT"
     },
     {
         "node_num": 23,
@@ -2301,9 +2086,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.71481,
         "latitude": 10.78932,
         "longitude": 106.71481,
-        "base_water": 46.0,
-        "water_level_cm": 46.0,
-        "status": "WARNING"
     },
     {
         "node_num": 24,
@@ -2319,9 +2101,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.70905,
         "latitude": 10.78691,
         "longitude": 106.70905,
-        "base_water": 36.8,
-        "water_level_cm": 36.8,
-        "status": "WARNING"
     },
     {
         "node_num": 25,
@@ -2337,9 +2116,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.70936,
         "latitude": 10.7868,
         "longitude": 106.70936,
-        "base_water": 20.7,
-        "water_level_cm": 20.7,
-        "status": "ALERT"
     },
     {
         "node_num": 26,
@@ -2355,9 +2131,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.71262,
         "latitude": 10.80993,
         "longitude": 106.71262,
-        "base_water": 17.6,
-        "water_level_cm": 17.6,
-        "status": "SAFE"
     },
     {
         "node_num": 27,
@@ -2373,9 +2146,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7159,
         "latitude": 10.80781,
         "longitude": 106.7159,
-        "base_water": 33.0,
-        "water_level_cm": 33.0,
-        "status": "ALERT"
     },
     {
         "node_num": 28,
@@ -2391,9 +2161,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7204,
         "latitude": 10.8061,
         "longitude": 106.7204,
-        "base_water": 44.0,
-        "water_level_cm": 44.0,
-        "status": "WARNING"
     },
     {
         "node_num": 29,
@@ -2409,9 +2176,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7226,
         "latitude": 10.80209,
         "longitude": 106.7226,
-        "base_water": 35.2,
-        "water_level_cm": 35.2,
-        "status": "WARNING"
     },
     {
         "node_num": 30,
@@ -2427,9 +2191,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.72392,
         "latitude": 10.79914,
         "longitude": 106.72392,
-        "base_water": 19.8,
-        "water_level_cm": 19.8,
-        "status": "SAFE"
     },
     {
         "node_num": 31,
@@ -2445,9 +2206,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.738,
         "latitude": 10.8015,
         "longitude": 106.738,
-        "base_water": 20.0,
-        "water_level_cm": 20.0,
-        "status": "ALERT"
     },
     {
         "node_num": 32,
@@ -2463,9 +2221,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7345,
         "latitude": 10.803,
         "longitude": 106.7345,
-        "base_water": 38.0,
-        "water_level_cm": 38.0,
-        "status": "WARNING"
     },
     {
         "node_num": 33,
@@ -2481,9 +2236,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7321,
         "latitude": 10.8035,
         "longitude": 106.7321,
-        "base_water": 54.0,
-        "water_level_cm": 54.0,
-        "status": "CRITICAL"
     },
     {
         "node_num": 34,
@@ -2499,9 +2251,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.73,
         "latitude": 10.8075,
         "longitude": 106.73,
-        "base_water": 45.0,
-        "water_level_cm": 45.0,
-        "status": "WARNING"
     },
     {
         "node_num": 35,
@@ -2517,9 +2266,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.728,
         "latitude": 10.812,
         "longitude": 106.728,
-        "base_water": 32.0,
-        "water_level_cm": 32.0,
-        "status": "ALERT"
     },
     {
         "node_num": 36,
@@ -2535,9 +2281,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7625,
         "latitude": 10.8495,
         "longitude": 106.7625,
-        "base_water": 26.0,
-        "water_level_cm": 26.0,
-        "status": "ALERT"
     },
     {
         "node_num": 37,
@@ -2553,9 +2296,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.76,
         "latitude": 10.851,
         "longitude": 106.76,
-        "base_water": 48.0,
-        "water_level_cm": 48.0,
-        "status": "WARNING"
     },
     {
         "node_num": 38,
@@ -2571,9 +2311,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7582,
         "latitude": 10.8525,
         "longitude": 106.7582,
-        "base_water": 60.0,
-        "water_level_cm": 60.0,
-        "status": "CRITICAL"
     },
     {
         "node_num": 39,
@@ -2589,9 +2326,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7565,
         "latitude": 10.8535,
         "longitude": 106.7565,
-        "base_water": 42.0,
-        "water_level_cm": 42.0,
-        "status": "WARNING"
     },
     {
         "node_num": 40,
@@ -2607,9 +2341,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.7535,
         "latitude": 10.855,
         "longitude": 106.7535,
-        "base_water": 22.0,
-        "water_level_cm": 22.0,
-        "status": "ALERT"
     },
     {
         "node_num": 41,
@@ -2625,9 +2356,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.679,
         "latitude": 10.844,
         "longitude": 106.679,
-        "base_water": 20.0,
-        "water_level_cm": 20.0,
-        "status": "ALERT"
     },
     {
         "node_num": 42,
@@ -2643,9 +2371,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.675,
         "latitude": 10.84,
         "longitude": 106.675,
-        "base_water": 36.0,
-        "water_level_cm": 36.0,
-        "status": "WARNING"
     },
     {
         "node_num": 43,
@@ -2661,9 +2386,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.672,
         "latitude": 10.835,
         "longitude": 106.672,
-        "base_water": 52.0,
-        "water_level_cm": 52.0,
-        "status": "CRITICAL"
     },
     {
         "node_num": 44,
@@ -2679,9 +2401,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.666,
         "latitude": 10.8385,
         "longitude": 106.666,
-        "base_water": 42.0,
-        "water_level_cm": 42.0,
-        "status": "WARNING"
     },
     {
         "node_num": 45,
@@ -2697,9 +2416,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.661,
         "latitude": 10.841,
         "longitude": 106.661,
-        "base_water": 24.0,
-        "water_level_cm": 24.0,
-        "status": "ALERT"
     },
     {
         "node_num": 46,
@@ -2715,9 +2431,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.628,
         "latitude": 10.71,
         "longitude": 106.628,
-        "base_water": 28.0,
-        "water_level_cm": 28.0,
-        "status": "ALERT"
     },
     {
         "node_num": 47,
@@ -2733,9 +2446,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.623,
         "latitude": 10.714,
         "longitude": 106.623,
-        "base_water": 44.0,
-        "water_level_cm": 44.0,
-        "status": "WARNING"
     },
     {
         "node_num": 48,
@@ -2751,9 +2461,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.6185,
         "latitude": 10.718,
         "longitude": 106.6185,
-        "base_water": 55.0,
-        "water_level_cm": 55.0,
-        "status": "CRITICAL"
     },
     {
         "node_num": 49,
@@ -2769,9 +2476,6 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.615,
         "latitude": 10.723,
         "longitude": 106.615,
-        "base_water": 40.0,
-        "water_level_cm": 40.0,
-        "status": "WARNING"
     },
     {
         "node_num": 50,
@@ -2787,164 +2491,189 @@ ALL_50_STATIONS: List[Dict[str, Any]] = [
         "lon": 106.611,
         "latitude": 10.731,
         "longitude": 106.611,
-        "base_water": 22.0,
-        "water_level_cm": 22.0,
-        "status": "ALERT"
     }
 ]
+
+
+logger = logging.getLogger(__name__)
 
 
 class ThingsBoardService:
     def __init__(self):
         self.jwt_token: Optional[str] = None
-        self.token_expiry: float = 0
-        self.tb_client = httpx.AsyncClient(timeout=4.0)
+        self.token_expiry = 0.0
+        self.tb_client = httpx.AsyncClient(timeout=8.0)
+        self._lock = asyncio.Lock()
+        self._auth_lock = asyncio.Lock()
+        self._snapshot = None
+        self._expires = 0.0
 
-    async def _get_auth_token(self) -> Optional[str]:
-        if self.jwt_token and time.time() < self.token_expiry:
+    async def _get_auth_token(self) -> str:
+        async with self._auth_lock:
+            if self.jwt_token and time.time() < self.token_expiry:
+                return self.jwt_token
+            if not settings.THINGSBOARD_USERNAME or not settings.THINGSBOARD_PASSWORD:
+                raise ValueError("Chưa cấu hình tài khoản ThingsBoard cho backend.")
+            response = await self.tb_client.post(
+                f"{settings.THINGSBOARD_URL.rstrip('/')}/api/auth/login",
+                json={"username": settings.THINGSBOARD_USERNAME,
+                      "password": settings.THINGSBOARD_PASSWORD})
+            if response.status_code in (401, 403):
+                raise ValueError("ThingsBoard từ chối tài khoản backend. Kiểm tra Secret credentials.")
+            response.raise_for_status()
+            self.jwt_token = response.json()["token"]
+            self.token_expiry = time.time() + 300
             return self.jwt_token
 
-        # Only connect to the endpoint configured for this environment.
-        urls_to_try = [settings.THINGSBOARD_URL]
-
-        for base_url in urls_to_try:
-            try:
-                login_url = f"{base_url.rstrip('/')}/api/auth/login"
-                resp = await self.tb_client.post(login_url, json={
-                    "username": settings.THINGSBOARD_USERNAME,
-                    "password": settings.THINGSBOARD_PASSWORD
-                })
-                if resp.status_code == 200:
-                    data = resp.json()
-                    self.jwt_token = data.get("token")
-                    self.token_expiry = time.time() + 3600
-                    return self.jwt_token
-            except Exception:
+    async def _get(self, path):
+        for attempt in range(2):
+            token = await self._get_auth_token()
+            response = await self.tb_client.get(
+                settings.THINGSBOARD_URL.rstrip('/') + path,
+                headers={"X-Authorization": f"Bearer {token}"})
+            if response.status_code == 401 and attempt == 0:
+                if self.jwt_token == token:
+                    self.jwt_token = None
                 continue
+            response.raise_for_status()
+            return response.json()
 
+    @staticmethod
+    def _value(data, key, default=None):
+        values = data.get(key)
+        return values[0].get("value", default) if isinstance(values, list) and values else default
+
+    @classmethod
+    def _station_index(cls, data, name):
+        # Logical station identity is independent of the ThingsBoard entity UUID.
+        logical_id = str(cls._value(data, "device_id", ""))
+        for idx, station in enumerate(ALL_50_STATIONS):
+            if logical_id == station["device_id"] or name == station["device_id"]:
+                return idx
+        parent = cls._value(data, "parent_id")
+        segment = cls._value(data, "segment_idx")
+        if parent is not None and segment is not None:
+            try:
+                segment = int(segment)
+                for idx, station in enumerate(ALL_50_STATIONS):
+                    if station["parent_id"] == parent and station["segment_idx"] == segment:
+                        return idx
+            except (ValueError, TypeError):
+                pass
+        match = re.fullmatch(r"HCM_Vehicle_.+_(\d{1,2})", name)
+        if match and 1 <= int(match[1]) <= len(ALL_50_STATIONS):
+            return int(match[1]) - 1
         return None
 
-    async def _fetch_devices_from_tb(self) -> Optional[List[DeviceTelemetry]]:
-        token = await self._get_auth_token()
-        if not token:
-            return None
+    async def get_snapshot(self):
+        # Share upstream work across REST/WS clients on this worker.
+        async with self._lock:
+            if self._snapshot is not None and time.monotonic() < self._expires:
+                return self._snapshot
+            by_station = {}
+            error = None
+            try:
+                devices = []
+                page = 0
+                while True:
+                    listing = await self._get(f"/api/tenant/devices?pageSize=100&page={page}")
+                    devices.extend(listing["data"])
+                    if not listing.get("hasNext", False):
+                        break
+                    page += 1
+                semaphore = asyncio.Semaphore(8)
 
-        headers = {"X-Authorization": f"Bearer {token}"}
-        base_url = settings.THINGSBOARD_URL.rstrip('/')
+                async def read_device(device):
+                    async with semaphore:
+                        try:
+                            entity_id = device["id"]["id"]
+                            data = await self._get(
+                                f"/api/plugins/telemetry/DEVICE/{entity_id}/values/timeseries"
+                                "?keys=device_id,parent_id,segment_idx,water_level_cm,latitude,longitude,rainfall_mm,temperature_c")
+                            idx = self._station_index(data, device.get("name", ""))
+                            if idx is None or not data.get("water_level_cm"):
+                                return None
+                            water = float(self._value(data, "water_level_cm"))
+                            ts = int(data["water_level_cm"][0]["ts"])
+                            if not math.isfinite(water) or water < 0 or ts <= 0 or ts > time.time() * 1000 + 5000:
+                                raise ValueError("invalid water measurement")
+                            return idx, {"entity_id": entity_id, "name": device.get("name", ""),
+                                         "data": data, "ts": ts, "water": water}
+                        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+                            logger.warning("Device telemetry read failed: %s", type(exc).__name__)
+                            return exc
 
-        try:
-            resp = await self.tb_client.get(
-                f"{base_url}/api/tenant/devices?pageSize=100&page=0",
-                headers=headers
-            )
-            if resp.status_code != 200:
-                return None
+                readings = await asyncio.gather(*(read_device(device) for device in devices))
+                failures = sum(isinstance(item, Exception) for item in readings)
+                for item in readings:
+                    if not isinstance(item, tuple):
+                        continue
+                    idx, reading = item
+                    if idx not in by_station or reading["ts"] > by_station[idx]["ts"]:
+                        by_station[idx] = reading
+                if failures:
+                    error = f"Không đọc được telemetry của {failures}/{len(devices)} thiết bị ThingsBoard."
+                elif not by_station:
+                    error = "ThingsBoard chưa có telemetry mực nước khớp với các trạm. Kiểm tra simulator."
+            except ValueError as exc:
+                error = str(exc)
+                logger.warning("ThingsBoard configuration/authentication failed")
+            except (httpx.HTTPError, KeyError, TypeError) as exc:
+                error = "Không kết nối hoặc đọc được ThingsBoard. Kiểm tra URL, DNS, NetworkPolicy và quyền tài khoản."
+                logger.warning("ThingsBoard read failed: %s", type(exc).__name__)
 
-            device_list = resp.json().get("data", [])
-            if not device_list:
-                return None
-
-            results: List[DeviceTelemetry] = []
-            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            for idx, dev in enumerate(device_list):
-                dev_id = dev["id"]["id"]
-                dev_name = dev["name"]
-
-                matched_station = ALL_50_STATIONS[idx % len(ALL_50_STATIONS)]
-
-                lat, lon, water, rain, temp = matched_station["lat"], matched_station["lon"], matched_station["base_water"], 25.0, 30.0
-                telemetry_resp = await self.tb_client.get(
-                    f"{base_url}/api/plugins/telemetry/DEVICE/{dev_id}/values/timeseries",
-                    headers=headers
-                )
-                
-                if telemetry_resp.status_code == 200:
-                    t_data = telemetry_resp.json()
-                    if "latitude" in t_data:
-                        lat = float(t_data["latitude"][0]["value"])
-                    if "longitude" in t_data:
-                        lon = float(t_data["longitude"][0]["value"])
-                    if "water_level_cm" in t_data:
-                        water = float(t_data["water_level_cm"][0]["value"])
-                    if "rainfall_mm" in t_data:
-                        rain = float(t_data["rainfall_mm"][0]["value"])
-                    if "temperature_c" in t_data:
-                        temp = float(t_data["temperature_c"][0]["value"])
-
-                status = "CRITICAL" if water >= 50.0 else ("WARNING" if water >= 35.0 else ("ALERT" if water >= 20.0 else "SAFE"))
-
+            now_ms = time.time() * 1000
+            results = []
+            for idx, station in enumerate(ALL_50_STATIONS):
+                reading = by_station.get(idx)
+                online = reading is not None and 0 <= now_ms - reading["ts"] <= 60000
+                water = reading["water"] if online else None
+                status = ("CRITICAL" if water >= 50 else "WARNING" if water >= 35
+                          else "ALERT" if water >= 20 else "SAFE") if online else "OFFLINE"
+                last_seen = (datetime.fromtimestamp(reading["ts"] / 1000, tz=VN_TZ)
+                             .strftime("%Y-%m-%d %H:%M:%S")) if reading else "Chưa có dữ liệu"
+                def measurement(key):
+                    if not online:
+                        return None
+                    try:
+                        value = float(self._value(reading["data"], key))
+                        return value if math.isfinite(value) else None
+                    except (TypeError, ValueError):
+                        return None
                 results.append(DeviceTelemetry(
-                    device_id=dev_id,
-                    name=dev_name,
-                    latitude=round(lat, 5),
-                    longitude=round(lon, 5),
-                    water_level_cm=round(water, 1),
-                    rainfall_mm=round(rain, 1),
-                    temperature_c=round(temp, 1),
-                    status=status,
-                    updated_at=now_str,
-                    road_id=matched_station["parent_id"] if matched_station["parent_type"] == "ROAD" else None,
-                    road_name=matched_station["parent_name"] if matched_station["parent_type"] == "ROAD" else None,
-                    station_node=matched_station["station_node"],
-                    segment_idx=matched_station["segment_idx"],
-                    parent_id=matched_station["parent_id"],
-                    parent_name=matched_station["parent_name"],
-                    parent_type=matched_station["parent_type"]
-                ))
-
-            if results:
-                return results
-        except Exception:
-            pass
-
-        return None
+                    device_id=reading["entity_id"] if reading else station["device_id"],
+                    name=reading["name"] if reading else station["device_name"],
+                    latitude=station["lat"], longitude=station["lon"],
+                    water_level_cm=water, rainfall_mm=measurement("rainfall_mm"),
+                    temperature_c=measurement("temperature_c"), status=status,
+                    updated_at=last_seen,
+                    error=None if online else (error or ("Không nhận telemetry trong 60 giây." if reading else "Trạm chưa gửi telemetry.")),
+                    road_id=station["parent_id"] if station["parent_type"] == "ROAD" else None,
+                    road_name=station["parent_name"] if station["parent_type"] == "ROAD" else None,
+                    station_node=station["station_node"], segment_idx=station["segment_idx"],
+                    parent_id=station["parent_id"], parent_name=station["parent_name"],
+                    parent_type=station["parent_type"]))
+            if not error and not any(d.status != "OFFLINE" for d in results):
+                error = "Tất cả trạm đã mất telemetry quá 60 giây. Kiểm tra simulator và kết nối MQTT."
+            self._snapshot = (results, error)
+            self._expires = time.monotonic() + 5
+            return self._snapshot
 
     async def get_live_devices(self) -> List[DeviceTelemetry]:
-        real_devices = await self._fetch_devices_from_tb()
-        if real_devices and len(real_devices) >= 50:
-            return real_devices
-
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        updated_list: List[DeviceTelemetry] = []
-
-        for st in ALL_50_STATIONS:
-            fluctuation = (random.random() - 0.5) * 4.0
-            water_val = round(max(5.0, st["base_water"] + fluctuation), 1)
-            status = "CRITICAL" if water_val >= 50.0 else ("WARNING" if water_val >= 35.0 else ("ALERT" if water_val >= 20.0 else "SAFE"))
-
-            updated_list.append(DeviceTelemetry(
-                device_id=st["device_id"],
-                name=st["device_name"],
-                latitude=round(st["lat"], 5),
-                longitude=round(st["lon"], 5),
-                water_level_cm=water_val,
-                rainfall_mm=round(random.uniform(15.0, 42.0), 1),
-                temperature_c=round(random.uniform(28.0, 31.5), 1),
-                status=status,
-                updated_at=now_str,
-                road_id=st["parent_id"] if st["parent_type"] == "ROAD" else None,
-                road_name=st["parent_name"] if st["parent_type"] == "ROAD" else None,
-                station_node=st["station_node"],
-                segment_idx=st["segment_idx"],
-                parent_id=st["parent_id"],
-                parent_name=st["parent_name"],
-                parent_type=st["parent_type"]
-            ))
-
-        return updated_list
+        return (await self.get_snapshot())[0]
 
     def get_city_summary(self, devices: List[DeviceTelemetry]) -> CitySummary:
-        safe_c = sum(1 for d in devices if d.status == "SAFE")
-        alert_c = sum(1 for d in devices if d.status in ("ALERT", "WARNING"))
-        crit_c = sum(1 for d in devices if d.status == "CRITICAL")
-        avg_w = round(sum(d.water_level_cm for d in devices) / len(devices), 1) if devices else 0.0
+        active_devices = [d for d in devices if d.status != "OFFLINE"]
+        safe_c = sum(1 for d in active_devices if d.status == "SAFE")
+        alert_c = sum(1 for d in active_devices if d.status in ("ALERT", "WARNING"))
+        crit_c = sum(1 for d in active_devices if d.status == "CRITICAL")
+        avg_w = round(sum(d.water_level_cm for d in active_devices) / len(active_devices), 1) if active_devices else None
         return CitySummary(
             safe_count=safe_c,
             alert_count=alert_c,
             critical_count=crit_c,
             avg_water_level_cm=avg_w,
-            total_active_devices=len(devices)
+            total_active_devices=len(active_devices)
         )
 
     def get_flooded_roads(self, devices: List[DeviceTelemetry]) -> List[FloodedRoad]:
@@ -2960,26 +2689,32 @@ class ThingsBoardService:
 
             for idx, n in enumerate(road["nodes"]):
                 telemetry = device_by_segment.get((road_id, idx))
-                if telemetry:
+                if telemetry and telemetry.status != "OFFLINE":
                     w = telemetry.water_level_cm
                     s = telemetry.status
+                    node_water_levels.append(w)
                 else:
-                    w = n["base_water"]
-                    s = "CRITICAL" if w >= 50.0 else ("WARNING" if w >= 35.0 else ("ALERT" if w >= 20.0 else "SAFE"))
+                    w = None
+                    s = "OFFLINE"
 
-                node_water_levels.append(w)
                 road_nodes.append(RoadNode(
+                    error=telemetry.error if telemetry else "Trạm chưa gửi telemetry.",
                     id=n["id"],
                     name=n["name"],
                     latitude=n["lat"],
                     longitude=n["lon"],
-                    water_level_cm=round(w, 1),
+                    water_level_cm=round(w, 1) if w is not None else None,
                     status=s
                 ))
 
-            avg_w = round(sum(node_water_levels) / len(node_water_levels), 1) if node_water_levels else 0.0
-            max_w = round(max(node_water_levels), 1) if node_water_levels else 0.0
-            severity = "CRITICAL" if max_w >= 50.0 else ("WARNING" if max_w >= 35.0 else ("ALERT" if max_w >= 20.0 else "SAFE"))
+            if node_water_levels:
+                avg_w = round(sum(node_water_levels) / len(node_water_levels), 1)
+                max_w = round(max(node_water_levels), 1)
+                severity = "CRITICAL" if max_w >= 50.0 else ("WARNING" if max_w >= 35.0 else ("ALERT" if max_w >= 20.0 else "SAFE"))
+            else:
+                avg_w = None
+                max_w = None
+                severity = "OFFLINE"
 
             roads_result.append(FloodedRoad(
                 id=road["id"],
@@ -2989,7 +2724,7 @@ class ThingsBoardService:
                 severity=severity,
                 avg_water_cm=avg_w,
                 max_water_cm=max_w,
-                avoid_advice=road.get("avoid_advice"),
+                avoid_advice=road.get("avoid_advice") if severity not in ("OFFLINE", "SAFE") else None,
                 coordinates=road["coordinates"],
                 nodes=road_nodes
             ))
@@ -3009,26 +2744,32 @@ class ThingsBoardService:
 
             for idx, n in enumerate(zone["nodes"]):
                 telemetry = device_by_segment.get((zone_id, idx))
-                if telemetry:
+                if telemetry and telemetry.status != "OFFLINE":
                     w = telemetry.water_level_cm
                     s = telemetry.status
+                    node_water_levels.append(w)
                 else:
-                    w = n["base_water"]
-                    s = "CRITICAL" if w >= 50.0 else ("WARNING" if w >= 35.0 else ("ALERT" if w >= 20.0 else "SAFE"))
+                    w = None
+                    s = "OFFLINE"
 
-                node_water_levels.append(w)
                 zone_nodes.append(RoadNode(
+                    error=telemetry.error if telemetry else "Trạm chưa gửi telemetry.",
                     id=f"{zone_id}-node-{idx+1}",
                     name=n["name"],
                     latitude=n["lat"],
                     longitude=n["lon"],
-                    water_level_cm=round(w, 1),
+                    water_level_cm=round(w, 1) if w is not None else None,
                     status=s
                 ))
 
-            avg_w = round(sum(node_water_levels) / len(node_water_levels), 1) if node_water_levels else 0.0
-            max_w = round(max(node_water_levels), 1) if node_water_levels else 0.0
-            severity = "CRITICAL" if max_w >= 50.0 else ("WARNING" if max_w >= 35.0 else ("ALERT" if max_w >= 20.0 else "SAFE"))
+            if node_water_levels:
+                avg_w = round(sum(node_water_levels) / len(node_water_levels), 1)
+                max_w = round(max(node_water_levels), 1)
+                severity = "CRITICAL" if max_w >= 50.0 else ("WARNING" if max_w >= 35.0 else ("ALERT" if max_w >= 20.0 else "SAFE"))
+            else:
+                avg_w = None
+                max_w = None
+                severity = "OFFLINE"
 
             zones_result.append(FloodZone(
                 id=zone["id"],
@@ -3040,38 +2781,30 @@ class ThingsBoardService:
                 max_water_cm=max_w,
                 center=zone["center"],
                 polygon=zone["polygon"],
-                avoid_advice=zone.get("avoid_advice"),
+                avoid_advice=zone.get("avoid_advice") if severity not in ("OFFLINE", "SAFE") else None,
                 nodes=zone_nodes
             ))
 
         return zones_result
 
     @staticmethod
-    def get_severe_locations() -> List[SevereLocation]:
+    def get_severe_locations(devices: Optional[List[DeviceTelemetry]] = None) -> List[SevereLocation]:
         locs: List[SevereLocation] = []
-        for r in ROADS_DATA:
-            center_node = r["nodes"][2]
-            locs.append(SevereLocation(
-                id=r["id"],
-                name=r["name"],
-                district=r["district"],
-                water_level_m=round(center_node["base_water"] / 100.0, 2),
-                severity="CRITICAL" if center_node["base_water"] >= 50.0 else "WARNING",
-                minutes_ago=random.randint(1, 5),
-                latitude=center_node["lat"],
-                longitude=center_node["lon"]
-            ))
-        for z in ZONES_DATA:
-            locs.append(SevereLocation(
-                id=z["id"],
-                name=z["name"],
-                district=z["district"],
-                water_level_m=round(z["base_water"] / 100.0, 2),
-                severity="CRITICAL" if z["base_water"] >= 50.0 else "WARNING",
-                minutes_ago=random.randint(1, 5),
-                latitude=z["center"][0],
-                longitude=z["center"][1]
-            ))
+        if not devices:
+            return locs
+
+        for d in devices:
+            if d.status in ("CRITICAL", "WARNING"):
+                locs.append(SevereLocation(
+                    id=d.device_id,
+                    name=f"{d.name} ({d.parent_name or ''})",
+                    district=d.road_name or d.parent_name or "TP.HCM",
+                    water_level_m=round(d.water_level_cm / 100.0, 2),
+                    severity=d.status,
+                    minutes_ago=1,
+                    latitude=d.latitude,
+                    longitude=d.longitude
+                ))
         return locs
 
 
