@@ -15,6 +15,8 @@ docker compose -f compose.fleet.yml build station-001
 docker compose -f compose.fleet.yml up -d --no-build
 ```
 
+Từ subnet simulator (10.0.1.0/24), endpoint MQTT là firewall `10.0.1.200:1883`, NAT tới ILB `10.0.0.225:1883`. Không gọi thẳng ILB từ untrust subnet. Kết nối nc tới firewall chỉ kiểm tra TCP; xác nhận thêm MQTT CONNACK/PUBACK và timestamp telemetry trong ThingsBoard.
+
 Cung cấp THINGSBOARD_HOST/PORT và provisioning credentials của profile từ nguồn quản lý credentials. Không commit credentials. Các device tên ngẫu nhiên cũ không bị xóa tự động. Backend phân trang toàn bộ device và chọn telemetry mới nhất theo station; thiết bị không ánh xạ được không bị gán tùy tiện theo thứ tự.
 
 MQTT dùng QoS 1 và chỉ báo publish sau PUBACK. Lỗi provisioning/MQTT được ghi log và retry có backoff. Token đã lưu được dùng lại khi recreate container. Nếu token bị thu hồi và profile cấm provision device đã có, cần khôi phục token chính xác từ ThingsBoard vào credential store; không xóa thiết bị để né lỗi.

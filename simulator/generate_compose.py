@@ -12,7 +12,7 @@ def generate():
                   "      PYTHONUNBUFFERED: '1'", f"      NODE_INDEX: '{index}'",
                   f"      DEVICE_NAME: VN-HCM-{index + 1:03d}",
                   "      STATE_DIR: /state",
-                  "      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.0.225}",
+                  "      THINGSBOARD_HOST: ${THINGSBOARD_HOST:-10.0.1.200}",
                   "      PORT: ${PORT:-1883}",
                   "      PROVISION_KEY: ${PROVISION_KEY:-}",
                   "      PROVISION_SECRET: ${PROVISION_SECRET:-}"]

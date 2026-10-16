@@ -915,7 +915,7 @@ ALL_50_STATIONS = [
 # ==========================================
 # CẤU HÌNH BIẾN MÔI TRƯỜNG & KẾT NỐI
 # ==========================================
-THINGSBOARD_HOST = os.getenv("THINGSBOARD_HOST", "10.0.0.225")
+THINGSBOARD_HOST = os.getenv("THINGSBOARD_HOST", "10.0.1.200")
 PORT = int(os.getenv("PORT", "1883"))
 PROVISION_KEY = os.getenv("PROVISION_KEY", "")
 PROVISION_SECRET = os.getenv("PROVISION_SECRET", "")
