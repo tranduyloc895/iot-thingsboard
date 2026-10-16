@@ -2,8 +2,8 @@ import time
 import json
 import random
 import os
-import socket
-import hashlib
+import threading
+from pathlib import Path
 import paho.mqtt.client as mqtt
 
 # ==============================================================================
@@ -921,151 +921,189 @@ PROVISION_KEY = os.getenv("PROVISION_KEY", "")
 PROVISION_SECRET = os.getenv("PROVISION_SECRET", "")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN", "")
 
-# Lấy Container ID hoặc HOSTNAME để ánh xạ vào đúng trạm cố định
-HOSTNAME = socket.gethostname()
-CONTAINER_ID = HOSTNAME[-6:] if len(HOSTNAME) >= 6 else HOSTNAME
-
-# Tính toán trạm cố định cho container này (0..49)
-if os.getenv("NODE_INDEX"):
-    station_idx = int(os.getenv("NODE_INDEX")) % len(ALL_50_STATIONS)
-else:
-    seed_val = int(hashlib.md5(HOSTNAME.encode()).hexdigest(), 16)
-    station_idx = seed_val % len(ALL_50_STATIONS)
-
+# Every replica must have an explicit logical station. No hostname hashing.
+node_index = os.getenv("NODE_INDEX")
+if node_index is None or not node_index.isdigit() or not 0 <= int(node_index) < len(ALL_50_STATIONS):
+    raise SystemExit("NODE_INDEX phải nằm trong 0..49 và được cố định cho từng simulator.")
+station_idx = int(node_index)
 assigned_station = ALL_50_STATIONS[station_idx]
-DEVICE_NAME = os.getenv("DEVICE_NAME", f"HCM_Vehicle_{CONTAINER_ID}_{assigned_station['node_num']:02d}")
-
-# Tọa độ cố định tại trạm giao thông / rốn ngập
+DEVICE_NAME = os.getenv("DEVICE_NAME", assigned_station["device_id"])
+if any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_" for ch in DEVICE_NAME):
+    raise SystemExit("DEVICE_NAME chứa ký tự không hợp lệ.")
 station_lat = assigned_station["lat"]
 station_lon = assigned_station["lon"]
+STATE_DIR = Path(os.getenv("STATE_DIR", "/state"))
+TOKEN_FILE = STATE_DIR / (DEVICE_NAME + ".json")
+
+
+def load_token():
+    try:
+        saved = json.loads(TOKEN_FILE.read_text())
+        if saved.get("host") == THINGSBOARD_HOST and saved.get("device_name") == DEVICE_NAME:
+            return saved.get("token")
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def save_token(token):
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    temporary = TOKEN_FILE.with_suffix(".tmp")
+    temporary.write_text(json.dumps({"host": THINGSBOARD_HOST, "device_name": DEVICE_NAME, "token": token}))
+    temporary.chmod(0o600)
+    temporary.replace(TOKEN_FILE)
 
 
 def provision_device():
-    provision_client = mqtt.Client()
-    # Theo chuẩn ThingsBoard: Username kết nối BẮT BUỘC là "provision"
-    provision_client.username_pw_set("provision")
-    token = None
-    done = False
+    client = mqtt.Client()
+    client.username_pw_set("provision")
+    completed = threading.Event()
+    result = {}
 
     def on_connect(client, userdata, flags, rc):
-        if rc == 0:
-            client.subscribe("/provision/response")
-            payload = {
-                "deviceName": DEVICE_NAME,
-                "provisionDeviceKey": PROVISION_KEY,
-                "provisionDeviceSecret": PROVISION_SECRET
-            }
-            client.publish("/provision/request", json.dumps(payload))
+        if rc != 0:
+            print(f"[{DEVICE_NAME}] MQTT provisioning bị từ chối rc={rc}", flush=True)
+            completed.set()
         else:
-            print(f"[{DEVICE_NAME}] Kết nối MQTT Provisioning bị từ chối, rc={rc}")
+            client.subscribe("/provision/response", qos=1)
 
-    def on_message(client, userdata, msg):
-        nonlocal token, done
-        if msg.topic == "/provision/response":
-            try:
-                response = json.loads(msg.payload.decode())
-                if response.get("status") == "SUCCESS":
-                    token = response.get("credentialsValue")
-                    print(f"[{DEVICE_NAME}] Đăng ký thành công! Token: {token}")
-                else:
-                    print(f"[{DEVICE_NAME}] Lỗi đăng ký từ ThingsBoard: {response.get('errorMsg')}")
-            except Exception as e:
-                print(f"[{DEVICE_NAME}] Lỗi giải mã response: {e}")
-            done = True
-            client.disconnect()
+    def on_subscribe(client, userdata, mid, granted_qos):
+        client.publish("/provision/request", json.dumps({
+            "deviceName": DEVICE_NAME, "provisionDeviceKey": PROVISION_KEY,
+            "provisionDeviceSecret": PROVISION_SECRET}), qos=1)
 
-    provision_client.on_connect = on_connect
-    provision_client.on_message = on_message
+    def on_message(client, userdata, message):
+        try:
+            response = json.loads(message.payload.decode())
+            if response.get("status") == "SUCCESS":
+                result["token"] = response.get("credentialsValue")
+            else:
+                print(f"[{DEVICE_NAME}] Provisioning lỗi: {response.get('status')}; {response.get('errorMsg', '')}", flush=True)
+        except (ValueError, UnicodeDecodeError):
+            print(f"[{DEVICE_NAME}] Provisioning response không hợp lệ", flush=True)
+        completed.set()
 
-    print(f"[{DEVICE_NAME}] Đang gửi yêu cầu Auto-Provisioning tới {THINGSBOARD_HOST}:{PORT}...")
+    client.on_connect = on_connect
+    client.on_subscribe = on_subscribe
+    client.on_message = on_message
     try:
-        provision_client.connect(THINGSBOARD_HOST, PORT, 60)
-        provision_client.loop_start()
-        wait_seconds = 0
-        while not done and wait_seconds < 15:
-            time.sleep(1)
-            wait_seconds += 1
-        provision_client.loop_stop()
-        provision_client.disconnect()
-    except Exception as e:
-        print(f"[{DEVICE_NAME}] Không thể kết nối tới ThingsBoard: {e}")
-
-    return token
+        client.connect(THINGSBOARD_HOST, PORT, 60)
+        client.loop_start()
+        if not completed.wait(20):
+            print(f"[{DEVICE_NAME}] Provisioning timeout", flush=True)
+    finally:
+        client.disconnect()
+        client.loop_stop()
+    return result.get("token")
 
 
 def run_simulation(token):
     client = mqtt.Client()
     client.username_pw_set(token)
 
-    try:
-        client.connect(THINGSBOARD_HOST, PORT, 60)
-        client.loop_start()
-    except Exception as e:
-        print(f"[{DEVICE_NAME}] Lỗi kết nối MQTT: {e}")
-        return
-
-    print(f"[{DEVICE_NAME}] Đã kích hoạt trạm quan trắc #{assigned_station['node_num']:02d}: "
-          f"{assigned_station['station_node']} ({assigned_station['parent_type']}: {assigned_station['parent_name']}, {assigned_station['district']})")
-
-    while True:
-        # Cảm biến cố định tại trạm, có sai số vi mô GPS (+- 1~2 mét)
-        curr_lat = station_lat + random.uniform(-0.00001, 0.00001)
-        curr_lon = station_lon + random.uniform(-0.00001, 0.00001)
-
-        # Mực nước dao động nhẹ quanh mức ngập chuẩn của trạm
-        fluctuation = (random.random() - 0.5) * 4.0
-        water_level = round(max(5.0, assigned_station["base_water"] + fluctuation), 1)
-
-        rainfall = round(random.uniform(15.0, 42.0), 1)
-        temperature = round(random.uniform(28.0, 31.8), 1)
-
-        if water_level >= 50.0:
-            status = "CRITICAL"
-        elif water_level >= 35.0:
-            status = "WARNING"
-        elif water_level >= 20.0:
-            status = "ALERT"
+    connected = threading.Event()
+    auth_failed = threading.Event()
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            connected.set()
         else:
-            status = "SAFE"
+            if rc in (4, 5):
+                auth_failed.set()
+            print(f"[{DEVICE_NAME}] MQTT connection bị từ chối rc={rc}", flush=True)
+    def on_disconnect(client, userdata, rc):
+        connected.clear()
+        print(f"[{DEVICE_NAME}] MQTT disconnected rc={rc}; đang kết nối lại", flush=True)
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+    client.reconnect_delay_set(min_delay=1, max_delay=30)
+    client.connect(THINGSBOARD_HOST, PORT, 60)
+    client.loop_start()
+    if not connected.wait(12):
+        client.disconnect()
+        client.loop_stop()
+        if auth_failed.is_set():
+            TOKEN_FILE.unlink(missing_ok=True)
+        raise RuntimeError("Không xác thực/kết nối được MQTT trong 12 giây")
 
-        payload = {
-            "device_name": DEVICE_NAME,
-            "parent_id": assigned_station["parent_id"],
-            "parent_name": assigned_station["parent_name"],
-            "parent_type": assigned_station["parent_type"],
-            "road_id": assigned_station["parent_id"] if assigned_station["parent_type"] == "ROAD" else None,
-            "road_name": assigned_station["parent_name"] if assigned_station["parent_type"] == "ROAD" else None,
-            "station_node": assigned_station["station_node"],
-            "segment_idx": assigned_station["segment_idx"],
-            "district": assigned_station["district"],
-            "latitude": round(curr_lat, 5),
-            "longitude": round(curr_lon, 5),
-            "speed": 0.0,
-            "temperature_c": temperature,
-            "water_level_cm": water_level,
-            "rainfall_mm": rainfall,
-            "status": status
-        }
+    try:
+        print(f"[{DEVICE_NAME}] Đã kích hoạt trạm quan trắc #{assigned_station['node_num']:02d}: "
+              f"{assigned_station['station_node']} ({assigned_station['parent_type']}: {assigned_station['parent_name']}, {assigned_station['district']})")
 
-        client.publish("v1/devices/me/telemetry", json.dumps(payload))
-        print(f"[{DEVICE_NAME}] Trạm #{assigned_station['node_num']:02d} [{assigned_station['station_node']}] "
-              f"-> Nước: {water_level}cm [{status}] | Mưa: {rainfall}mm | ({payload['latitude']}, {payload['longitude']})")
+        while True:
+            if not connected.wait(30):
+                client.disconnect()
+                client.loop_stop()
+                raise RuntimeError("Mất kết nối MQTT quá 30 giây")
+            # Cảm biến cố định tại trạm, có sai số vi mô GPS (+- 1~2 mét)
+            curr_lat = station_lat + random.uniform(-0.00001, 0.00001)
+            curr_lon = station_lon + random.uniform(-0.00001, 0.00001)
 
-        time.sleep(random.uniform(3, 5))
+            # Mực nước dao động nhẹ quanh mức ngập chuẩn của trạm
+            fluctuation = (random.random() - 0.5) * 4.0
+            water_level = round(max(5.0, assigned_station["base_water"] + fluctuation), 1)
+
+            rainfall = round(random.uniform(15.0, 42.0), 1)
+            temperature = round(random.uniform(28.0, 31.8), 1)
+
+            if water_level >= 50.0:
+                status = "CRITICAL"
+            elif water_level >= 35.0:
+                status = "WARNING"
+            elif water_level >= 20.0:
+                status = "ALERT"
+            else:
+                status = "SAFE"
+
+            payload = {
+                "device_id": assigned_station["device_id"],
+                "source": "simulator",
+                "device_name": DEVICE_NAME,
+                "parent_id": assigned_station["parent_id"],
+                "parent_name": assigned_station["parent_name"],
+                "parent_type": assigned_station["parent_type"],
+                "road_id": assigned_station["parent_id"] if assigned_station["parent_type"] == "ROAD" else None,
+                "road_name": assigned_station["parent_name"] if assigned_station["parent_type"] == "ROAD" else None,
+                "station_node": assigned_station["station_node"],
+                "segment_idx": assigned_station["segment_idx"],
+                "district": assigned_station["district"],
+                "latitude": round(curr_lat, 5),
+                "longitude": round(curr_lon, 5),
+                "speed": 0.0,
+                "temperature_c": temperature,
+                "water_level_cm": water_level,
+                "rainfall_mm": rainfall,
+                "status": status
+            }
+
+            published = client.publish("v1/devices/me/telemetry", json.dumps(payload), qos=1)
+            if published.rc != mqtt.MQTT_ERR_SUCCESS:
+                raise RuntimeError(f"MQTT publish thất bại rc={published.rc}")
+            published.wait_for_publish(timeout=10)
+            if not published.is_published():
+                raise RuntimeError("MQTT publish chưa nhận PUBACK")
+            print(f"[{DEVICE_NAME}] Trạm #{assigned_station['node_num']:02d} [{assigned_station['station_node']}] "
+                  f"-> Nước: {water_level}cm [{status}] | Mưa: {rainfall}mm | ({payload['latitude']}, {payload['longitude']})")
+
+            time.sleep(random.uniform(3, 5))
+    finally:
+        client.disconnect()
+        client.loop_stop()
 
 
 if __name__ == "__main__":
-    token = None
-    if ACCESS_TOKEN:
-        print(f"[{DEVICE_NAME}] Sử dụng trực tiếp ACCESS_TOKEN đã cấu hình.")
-        token = ACCESS_TOKEN
-    elif PROVISION_KEY and PROVISION_SECRET:
-        token = provision_device()
-    else:
-        print("LỖI: Vui lòng cung cấp ACCESS_TOKEN hoặc cả bộ (PROVISION_KEY & PROVISION_SECRET)")
-        exit(1)
-
-    if token:
-        run_simulation(token)
-    else:
-        print(f"[{DEVICE_NAME}] Dừng mô phỏng do không lấy được token.")
+    delay = 3
+    while True:
+        try:
+            token = ACCESS_TOKEN or load_token()
+            if not token:
+                if not PROVISION_KEY or not PROVISION_SECRET:
+                    raise RuntimeError("Thiếu token đã lưu hoặc PROVISION_KEY/PROVISION_SECRET")
+                token = provision_device()
+                if not token:
+                    raise RuntimeError("Không lấy được token; kiểm tra provisioning profile/credentials")
+                save_token(token)
+            run_simulation(token)
+        except (OSError, RuntimeError, ValueError) as exc:
+            print(f"[{DEVICE_NAME}] ERROR: {exc}. Thử lại sau {delay}s", flush=True)
+            time.sleep(delay)
+            delay = min(delay * 2, 60)

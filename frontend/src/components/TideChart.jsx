@@ -57,7 +57,6 @@ export default function TideChart({ station, rainfall_mm }) {
   const alert = getTideAlert(station.current_level);
   const cause = getFloodCause(station.current_level, rainfall_mm);
   const gradId = `tide-grad-${station.station_id}`;
-  const isHigh = station.status === 'HIGH' || station.status === 'CRITICAL';
   const lineColor = alert.color;
 
   // Vẽ đường chuẩn BĐ II (1.35m) và BĐ III (1.5m)

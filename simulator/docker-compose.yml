@@ -1,16 +1,22 @@
-version: '3.8'
-
 services:
   vehicle-simulator:
     image: ghcr.io/tranduyloc895/hcm-vehicle-simulator:latest
     build: .
     restart: unless-stopped
+    volumes:
+      - simulator-state:/state
     environment:
+      - PYTHONUNBUFFERED=1
+      - NODE_INDEX=${NODE_INDEX:?Set NODE_INDEX in 0..49 or use compose.fleet.yml}
+      - STATE_DIR=/state
       # Địa chỉ IP của ThingsBoard K8s Service (Cluster IP hoặc Bastion private IP)
       - THINGSBOARD_HOST=${THINGSBOARD_HOST:-10.0.0.225}
       - PORT=${PORT:-1883}
       # Auto-Provisioning Credentials từ ThingsBoard Device Profile
-      - PROVISION_KEY=${PROVISION_KEY:-DIEN_KEY_VAO_DAY}
-      - PROVISION_SECRET=${PROVISION_SECRET:-DIEN_SECRET_VAO_DAY}
+      - PROVISION_KEY=${PROVISION_KEY:-}
+      - PROVISION_SECRET=${PROVISION_SECRET:-}
       # Access Token (nếu không dùng provisioning mà dùng token đơn lẻ)
       # - ACCESS_TOKEN=
+
+volumes:
+  simulator-state:

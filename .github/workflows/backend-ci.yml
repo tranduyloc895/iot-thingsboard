@@ -29,6 +29,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Test telemetry and source failure handling
+        run: |
+          python3 -m pip install -r backend/requirements.txt
+          cd backend
+          python3 -m unittest discover -s tests -v
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

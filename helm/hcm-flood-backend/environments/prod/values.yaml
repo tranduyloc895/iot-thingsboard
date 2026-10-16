@@ -7,7 +7,7 @@ autoscaling:
 env:
   APP_ENV: production
   PORT: '8000'
-  THINGSBOARD_URL: http://thingsboard-node.iot-prod.svc.cluster.local:8080
+  THINGSBOARD_URL: http://iot-thingsboard-node.thingsboard.svc.cluster.local:8080
 envFrom:
 - secretRef:
     name: thingsboard-api-credentials

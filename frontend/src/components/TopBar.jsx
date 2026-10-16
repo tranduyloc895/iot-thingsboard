@@ -3,6 +3,7 @@ import { User, LayoutGrid } from 'lucide-react';
 
 // Mô tả mưa theo mm/h
 function getRainLabel(mm) {
+  if (mm == null) return { label: 'Chưa có dữ liệu mưa', color: '#94a3b8', icon: '🌧️' };
   if (mm >= 50) return { label: 'Mưa rất to', color: '#f43f5e', icon: '⛈️' };
   if (mm >= 25) return { label: 'Mưa to', color: '#fb923c', icon: '🌧️' };
   if (mm >= 10) return { label: 'Mưa vừa', color: '#facc15', icon: '🌦️' };
@@ -10,7 +11,12 @@ function getRainLabel(mm) {
   return { label: 'Không mưa', color: '#94a3b8', icon: '🌤️' };
 }
 
-export default function TopBar({ weather }) {
+export default function TopBar({ 
+  weather, 
+  isPinging = false,
+  avgWater,
+  weatherError
+}) {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
 
@@ -26,10 +32,10 @@ export default function TopBar({ weather }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Lấy dữ liệu thời tiết hoặc dùng fallback
-  const rain = weather?.rainfall_mm ?? 18.5;
-  const temp = weather?.temperature_c ?? 31.0;
-  const hum = weather?.humidity_percent ?? 80;
+  // Missing measurements remain unavailable.
+  const rain = weather?.rainfall_mm;
+  const temp = weather?.temperature_c;
+  const hum = weather?.humidity_percent;
   const { label: rainLabel, color: rainColor, icon: rainIcon } = getRainLabel(rain);
 
   const cardStyle = {
@@ -61,24 +67,31 @@ export default function TopBar({ weather }) {
       flexWrap: 'wrap',
     }}>
 
-      {/* ─── LIVE indicator ─── */}
+      {/* ─── 🌊 Mực nước ngập trung bình toàn thành phố ─── */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '5px',
-        padding: '4px 9px',
-        background: 'rgba(16, 185, 129, 0.12)',
-        borderRadius: '8px',
-        border: '1px solid rgba(16, 185, 129, 0.25)'
+        ...cardStyle,
+        border: isPinging ? '1px solid rgba(56, 189, 248, 0.4)' : cardStyle.border,
+        transition: 'border-color 0.25s ease'
       }}>
-        <span style={{
-          width: '7px', height: '7px', borderRadius: '50%',
-          background: '#10b981', boxShadow: '0 0 8px #10b981',
-          animation: 'pulse 1.5s infinite'
-        }} />
-        <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '1.2px', color: '#10b981' }}>LIVE</span>
+        <span style={{ fontSize: '13px' }}>🌊</span>
+        <div>
+          <div style={{ 
+            fontSize: '11px', 
+            fontWeight: 800, 
+            color: '#38bdf8', 
+            fontFamily: 'Space Grotesk', 
+            lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums'
+          }}>
+            {avgWater != null ? `${Number(avgWater).toFixed(1)} cm` : 'Chưa có dữ liệu'}
+          </div>
+          <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
+            Nước ngập TB
+          </div>
+        </div>
       </div>
 
+      {weatherError && <div role="status" style={{ color: '#fbbf24', fontSize: '11px', maxWidth: '250px' }}>{weatherError}</div>}
       {/* ─── Divider ─── */}
       <span style={{ width: '1px', height: '22px', background: 'rgba(255,255,255,0.1)' }} />
 
@@ -86,8 +99,15 @@ export default function TopBar({ weather }) {
       <div style={{ ...cardStyle, border: `1px solid ${rainColor}30` }}>
         <span style={{ fontSize: '14px' }}>{rainIcon}</span>
         <div>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: rainColor, fontFamily: 'Space Grotesk', lineHeight: 1 }}>
-            {rain.toFixed(1)} mm/h
+          <div style={{ 
+            fontSize: '11px', 
+            fontWeight: 800, 
+            color: rainColor, 
+            fontFamily: 'Space Grotesk', 
+            lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums'
+          }}>
+            {rain == null ? '—' : `${rain.toFixed(1)} mm/h`}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>{rainLabel}</div>
         </div>
@@ -97,8 +117,15 @@ export default function TopBar({ weather }) {
       <div style={cardStyle}>
         <span style={{ fontSize: '13px' }}>🌡️</span>
         <div>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: '#fbbf24', fontFamily: 'Space Grotesk', lineHeight: 1 }}>
-            {temp.toFixed(1)}°C
+          <div style={{ 
+            fontSize: '11px', 
+            fontWeight: 800, 
+            color: '#fbbf24', 
+            fontFamily: 'Space Grotesk', 
+            lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums'
+          }}>
+            {temp == null ? '—' : `${temp.toFixed(1)}°C`}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>Nhiệt độ</div>
         </div>
@@ -108,8 +135,15 @@ export default function TopBar({ weather }) {
       <div style={cardStyle}>
         <span style={{ fontSize: '13px' }}>💧</span>
         <div>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: '#38bdf8', fontFamily: 'Space Grotesk', lineHeight: 1 }}>
-            {hum.toFixed(0)}%
+          <div style={{ 
+            fontSize: '11px', 
+            fontWeight: 800, 
+            color: '#38bdf8', 
+            fontFamily: 'Space Grotesk', 
+            lineHeight: 1,
+            fontVariantNumeric: 'tabular-nums'
+          }}>
+            {hum == null ? '—' : `${hum.toFixed(0)}%`}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>Độ ẩm</div>
         </div>
@@ -119,8 +153,15 @@ export default function TopBar({ weather }) {
       <span style={{ width: '1px', height: '22px', background: 'rgba(255,255,255,0.1)' }} />
 
       {/* ─── Clock ─── */}
-      <div style={{ textAlign: 'center', minWidth: '86px' }}>
-        <div style={{ fontSize: '13px', fontWeight: 700, fontFamily: 'Space Grotesk', color: '#ffffff', letterSpacing: '0.5px' }}>
+      <div style={{ textAlign: 'center', minWidth: '82px' }}>
+        <div style={{ 
+          fontSize: '13px', 
+          fontWeight: 700, 
+          fontFamily: 'Space Grotesk', 
+          color: '#ffffff', 
+          letterSpacing: '0.5px',
+          fontVariantNumeric: 'tabular-nums'
+        }}>
           {timeStr}
         </div>
         <div style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '0.3px', color: '#94a3b8', marginTop: '1px' }}>
@@ -142,3 +183,4 @@ export default function TopBar({ weather }) {
     </div>
   );
 }
+
