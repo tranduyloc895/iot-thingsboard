@@ -1,10 +1,18 @@
 import random
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Dict, Any, Optional
 import httpx
 from ..config import settings
 from ..models.schemas import DeviceTelemetry, SevereLocation, CitySummary, RoadNode, FloodedRoad, FloodZone
+
+VN_TZ = timezone(timedelta(hours=7))
+
+def get_vn_now() -> datetime:
+    return datetime.now(VN_TZ)
+
+def get_vn_now_str() -> str:
+    return get_vn_now().strftime("%Y-%m-%d %H:%M:%S")
 
 ROADS_DATA: List[Dict[str, Any]] = [
     {
@@ -2824,127 +2832,172 @@ class ThingsBoardService:
 
         return None
 
-    async def _fetch_devices_from_tb(self) -> Optional[List[DeviceTelemetry]]:
-        token = await self._get_auth_token()
-        if not token:
-            return None
+    async def get_live_devices(self) -> List[DeviceTelemetry]:
+        """
+        Lấy dữ liệu telemetry thời gian thực từ ThingsBoard.
+        Nếu thiết bị không gửi data trong 60s qua (hoặc container đã stop), thiết bị sẽ có trạng thái OFFLINE.
+        Hoàn toàn không tự sinh dữ liệu ngẫu nhiên (mock).
+        """
+        now_ms = time.time() * 1000
 
-        headers = {"X-Authorization": f"Bearer {token}"}
-        base_url = settings.THINGSBOARD_URL.rstrip('/')
+        # Lưu thông tin telemetry thực tế lấy từ ThingsBoard theo station_idx (0..49)
+        tb_data_by_station: Dict[int, Dict[str, Any]] = {}
 
         try:
-            resp = await self.tb_client.get(
-                f"{base_url}/api/tenant/devices?pageSize=100&page=0",
-                headers=headers
-            )
-            if resp.status_code != 200:
-                return None
+            token = await self._get_auth_token()
+            if token:
+                headers = {"X-Authorization": f"Bearer {token}"}
+                base_url = settings.THINGSBOARD_URL.rstrip('/')
 
-            device_list = resp.json().get("data", [])
-            if not device_list:
-                return None
-
-            results: List[DeviceTelemetry] = []
-            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            for idx, dev in enumerate(device_list):
-                dev_id = dev["id"]["id"]
-                dev_name = dev["name"]
-
-                matched_station = ALL_50_STATIONS[idx % len(ALL_50_STATIONS)]
-
-                lat, lon, water, rain, temp = matched_station["lat"], matched_station["lon"], matched_station["base_water"], 25.0, 30.0
-                telemetry_resp = await self.tb_client.get(
-                    f"{base_url}/api/plugins/telemetry/DEVICE/{dev_id}/values/timeseries",
+                # Lấy danh sách thiết bị trên tenant ThingsBoard
+                resp = await self.tb_client.get(
+                    f"{base_url}/api/tenant/devices?pageSize=100&page=0",
                     headers=headers
                 )
-                
-                if telemetry_resp.status_code == 200:
-                    t_data = telemetry_resp.json()
-                    if "latitude" in t_data:
-                        lat = float(t_data["latitude"][0]["value"])
-                    if "longitude" in t_data:
-                        lon = float(t_data["longitude"][0]["value"])
-                    if "water_level_cm" in t_data:
-                        water = float(t_data["water_level_cm"][0]["value"])
-                    if "rainfall_mm" in t_data:
-                        rain = float(t_data["rainfall_mm"][0]["value"])
-                    if "temperature_c" in t_data:
-                        temp = float(t_data["temperature_c"][0]["value"])
+                if resp.status_code == 200:
+                    device_list = resp.json().get("data", [])
+
+                    for idx, dev in enumerate(device_list):
+                        dev_id = dev["id"]["id"]
+                        dev_name = dev.get("name", "")
+
+                        telemetry_resp = await self.tb_client.get(
+                            f"{base_url}/api/plugins/telemetry/DEVICE/{dev_id}/values/timeseries",
+                            headers=headers
+                        )
+
+                        if telemetry_resp.status_code == 200:
+                            t_data = telemetry_resp.json()
+
+                            # Tìm timestamp (ts) mới nhất trong các trường telemetry
+                            latest_ts = 0
+                            for k, v in t_data.items():
+                                if isinstance(v, list) and len(v) > 0 and "ts" in v[0]:
+                                    if v[0]["ts"] > latest_ts:
+                                        latest_ts = v[0]["ts"]
+
+                            # Ánh xạ thiết bị vào trạm quan trắc (0..49)
+                            station_idx = None
+
+                            # Cách 1: Tìm theo parent_id và segment_idx gửi trong telemetry
+                            if "parent_id" in t_data and "segment_idx" in t_data:
+                                try:
+                                    p_id = str(t_data["parent_id"][0]["value"])
+                                    s_idx = int(t_data["segment_idx"][0]["value"])
+                                    for s_i, st in enumerate(ALL_50_STATIONS):
+                                        if st["parent_id"] == p_id and st["segment_idx"] == s_idx:
+                                            station_idx = s_i
+                                            break
+                                except Exception:
+                                    pass
+
+                            # Cách 2: Tìm theo node_num ở cuối tên thiết bị (ví dụ HCM_Vehicle_xxx_05 -> trạm 5)
+                            if station_idx is None:
+                                import re
+                                match = re.search(r"_(\d{1,2})$", dev_name)
+                                if match:
+                                    try:
+                                        node_num = int(match.group(1))
+                                        if 1 <= node_num <= len(ALL_50_STATIONS):
+                                            station_idx = node_num - 1
+                                    except Exception:
+                                        pass
+
+                            # Cách 3: Thứ tự thiết bị
+                            if station_idx is None:
+                                station_idx = idx % len(ALL_50_STATIONS)
+
+                            # Thiết bị chỉ ONLINE khi có gói tin trong vòng 60 giây qua
+                            is_online = (latest_ts > 0) and ((now_ms - latest_ts) <= 60_000)
+
+                            tb_data_by_station[station_idx] = {
+                                "dev_id": dev_id,
+                                "dev_name": dev_name,
+                                "is_online": is_online,
+                                "latest_ts": latest_ts,
+                                "t_data": t_data
+                            }
+        except Exception:
+            pass
+
+        # Xây dựng danh sách trạng thái đầy đủ cho 50 trạm quan trắc
+        results: List[DeviceTelemetry] = []
+
+        for idx, st in enumerate(ALL_50_STATIONS):
+            tb_info = tb_data_by_station.get(idx)
+
+            if tb_info and tb_info["is_online"]:
+                t_data = tb_info["t_data"]
+                lat = float(t_data["latitude"][0]["value"]) if "latitude" in t_data else st["lat"]
+                lon = float(t_data["longitude"][0]["value"]) if "longitude" in t_data else st["lon"]
+                water = float(t_data["water_level_cm"][0]["value"]) if "water_level_cm" in t_data else 0.0
+                rain = float(t_data["rainfall_mm"][0]["value"]) if "rainfall_mm" in t_data else 0.0
+                temp = float(t_data["temperature_c"][0]["value"]) if "temperature_c" in t_data else 0.0
 
                 status = "CRITICAL" if water >= 50.0 else ("WARNING" if water >= 35.0 else ("ALERT" if water >= 20.0 else "SAFE"))
+                updated_at = datetime.fromtimestamp(tb_info["latest_ts"] / 1000.0, tz=VN_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
                 results.append(DeviceTelemetry(
-                    device_id=dev_id,
-                    name=dev_name,
+                    device_id=tb_info["dev_id"],
+                    name=tb_info["dev_name"] or st["device_name"],
                     latitude=round(lat, 5),
                     longitude=round(lon, 5),
                     water_level_cm=round(water, 1),
                     rainfall_mm=round(rain, 1),
                     temperature_c=round(temp, 1),
                     status=status,
-                    updated_at=now_str,
-                    road_id=matched_station["parent_id"] if matched_station["parent_type"] == "ROAD" else None,
-                    road_name=matched_station["parent_name"] if matched_station["parent_type"] == "ROAD" else None,
-                    station_node=matched_station["station_node"],
-                    segment_idx=matched_station["segment_idx"],
-                    parent_id=matched_station["parent_id"],
-                    parent_name=matched_station["parent_name"],
-                    parent_type=matched_station["parent_type"]
+                    updated_at=updated_at,
+                    road_id=st["parent_id"] if st["parent_type"] == "ROAD" else None,
+                    road_name=st["parent_name"] if st["parent_type"] == "ROAD" else None,
+                    station_node=st["station_node"],
+                    segment_idx=st["segment_idx"],
+                    parent_id=st["parent_id"],
+                    parent_name=st["parent_name"],
+                    parent_type=st["parent_type"]
+                ))
+            else:
+                # Không có dữ liệu hoặc container đã stop -> Trạng thái OFFLINE
+                if tb_info and tb_info["latest_ts"] > 0:
+                    updated_at = datetime.fromtimestamp(tb_info["latest_ts"] / 1000.0, tz=VN_TZ).strftime("%Y-%m-%d %H:%M:%S")
+                else:
+                    updated_at = "Chưa có dữ liệu"
+
+                dev_id = tb_info["dev_id"] if tb_info else st["device_id"]
+                dev_name = tb_info["dev_name"] if tb_info else st["device_name"]
+
+                results.append(DeviceTelemetry(
+                    device_id=dev_id,
+                    name=dev_name,
+                    latitude=round(st["lat"], 5),
+                    longitude=round(st["lon"], 5),
+                    water_level_cm=0.0,
+                    rainfall_mm=0.0,
+                    temperature_c=0.0,
+                    status="OFFLINE",
+                    updated_at=updated_at,
+                    road_id=st["parent_id"] if st["parent_type"] == "ROAD" else None,
+                    road_name=st["parent_name"] if st["parent_type"] == "ROAD" else None,
+                    station_node=st["station_node"],
+                    segment_idx=st["segment_idx"],
+                    parent_id=st["parent_id"],
+                    parent_name=st["parent_name"],
+                    parent_type=st["parent_type"]
                 ))
 
-            if results:
-                return results
-        except Exception:
-            pass
-
-        return None
-
-    async def get_live_devices(self) -> List[DeviceTelemetry]:
-        real_devices = await self._fetch_devices_from_tb()
-        if real_devices and len(real_devices) >= 50:
-            return real_devices
-
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        updated_list: List[DeviceTelemetry] = []
-
-        for st in ALL_50_STATIONS:
-            fluctuation = (random.random() - 0.5) * 4.0
-            water_val = round(max(5.0, st["base_water"] + fluctuation), 1)
-            status = "CRITICAL" if water_val >= 50.0 else ("WARNING" if water_val >= 35.0 else ("ALERT" if water_val >= 20.0 else "SAFE"))
-
-            updated_list.append(DeviceTelemetry(
-                device_id=st["device_id"],
-                name=st["device_name"],
-                latitude=round(st["lat"], 5),
-                longitude=round(st["lon"], 5),
-                water_level_cm=water_val,
-                rainfall_mm=round(random.uniform(15.0, 42.0), 1),
-                temperature_c=round(random.uniform(28.0, 31.5), 1),
-                status=status,
-                updated_at=now_str,
-                road_id=st["parent_id"] if st["parent_type"] == "ROAD" else None,
-                road_name=st["parent_name"] if st["parent_type"] == "ROAD" else None,
-                station_node=st["station_node"],
-                segment_idx=st["segment_idx"],
-                parent_id=st["parent_id"],
-                parent_name=st["parent_name"],
-                parent_type=st["parent_type"]
-            ))
-
-        return updated_list
+        return results
 
     def get_city_summary(self, devices: List[DeviceTelemetry]) -> CitySummary:
-        safe_c = sum(1 for d in devices if d.status == "SAFE")
-        alert_c = sum(1 for d in devices if d.status in ("ALERT", "WARNING"))
-        crit_c = sum(1 for d in devices if d.status == "CRITICAL")
-        avg_w = round(sum(d.water_level_cm for d in devices) / len(devices), 1) if devices else 0.0
+        active_devices = [d for d in devices if d.status != "OFFLINE"]
+        safe_c = sum(1 for d in active_devices if d.status == "SAFE")
+        alert_c = sum(1 for d in active_devices if d.status in ("ALERT", "WARNING"))
+        crit_c = sum(1 for d in active_devices if d.status == "CRITICAL")
+        avg_w = round(sum(d.water_level_cm for d in active_devices) / len(active_devices), 1) if active_devices else 0.0
         return CitySummary(
             safe_count=safe_c,
             alert_count=alert_c,
             critical_count=crit_c,
             avg_water_level_cm=avg_w,
-            total_active_devices=len(devices)
+            total_active_devices=len(active_devices)
         )
 
     def get_flooded_roads(self, devices: List[DeviceTelemetry]) -> List[FloodedRoad]:
@@ -2960,14 +3013,14 @@ class ThingsBoardService:
 
             for idx, n in enumerate(road["nodes"]):
                 telemetry = device_by_segment.get((road_id, idx))
-                if telemetry:
+                if telemetry and telemetry.status != "OFFLINE":
                     w = telemetry.water_level_cm
                     s = telemetry.status
+                    node_water_levels.append(w)
                 else:
-                    w = n["base_water"]
-                    s = "CRITICAL" if w >= 50.0 else ("WARNING" if w >= 35.0 else ("ALERT" if w >= 20.0 else "SAFE"))
+                    w = 0.0
+                    s = "OFFLINE"
 
-                node_water_levels.append(w)
                 road_nodes.append(RoadNode(
                     id=n["id"],
                     name=n["name"],
@@ -2977,9 +3030,14 @@ class ThingsBoardService:
                     status=s
                 ))
 
-            avg_w = round(sum(node_water_levels) / len(node_water_levels), 1) if node_water_levels else 0.0
-            max_w = round(max(node_water_levels), 1) if node_water_levels else 0.0
-            severity = "CRITICAL" if max_w >= 50.0 else ("WARNING" if max_w >= 35.0 else ("ALERT" if max_w >= 20.0 else "SAFE"))
+            if node_water_levels:
+                avg_w = round(sum(node_water_levels) / len(node_water_levels), 1)
+                max_w = round(max(node_water_levels), 1)
+                severity = "CRITICAL" if max_w >= 50.0 else ("WARNING" if max_w >= 35.0 else ("ALERT" if max_w >= 20.0 else "SAFE"))
+            else:
+                avg_w = 0.0
+                max_w = 0.0
+                severity = "OFFLINE"
 
             roads_result.append(FloodedRoad(
                 id=road["id"],
@@ -3009,14 +3067,14 @@ class ThingsBoardService:
 
             for idx, n in enumerate(zone["nodes"]):
                 telemetry = device_by_segment.get((zone_id, idx))
-                if telemetry:
+                if telemetry and telemetry.status != "OFFLINE":
                     w = telemetry.water_level_cm
                     s = telemetry.status
+                    node_water_levels.append(w)
                 else:
-                    w = n["base_water"]
-                    s = "CRITICAL" if w >= 50.0 else ("WARNING" if w >= 35.0 else ("ALERT" if w >= 20.0 else "SAFE"))
+                    w = 0.0
+                    s = "OFFLINE"
 
-                node_water_levels.append(w)
                 zone_nodes.append(RoadNode(
                     id=f"{zone_id}-node-{idx+1}",
                     name=n["name"],
@@ -3026,9 +3084,14 @@ class ThingsBoardService:
                     status=s
                 ))
 
-            avg_w = round(sum(node_water_levels) / len(node_water_levels), 1) if node_water_levels else 0.0
-            max_w = round(max(node_water_levels), 1) if node_water_levels else 0.0
-            severity = "CRITICAL" if max_w >= 50.0 else ("WARNING" if max_w >= 35.0 else ("ALERT" if max_w >= 20.0 else "SAFE"))
+            if node_water_levels:
+                avg_w = round(sum(node_water_levels) / len(node_water_levels), 1)
+                max_w = round(max(node_water_levels), 1)
+                severity = "CRITICAL" if max_w >= 50.0 else ("WARNING" if max_w >= 35.0 else ("ALERT" if max_w >= 20.0 else "SAFE"))
+            else:
+                avg_w = 0.0
+                max_w = 0.0
+                severity = "OFFLINE"
 
             zones_result.append(FloodZone(
                 id=zone["id"],
@@ -3047,31 +3110,23 @@ class ThingsBoardService:
         return zones_result
 
     @staticmethod
-    def get_severe_locations() -> List[SevereLocation]:
+    def get_severe_locations(devices: Optional[List[DeviceTelemetry]] = None) -> List[SevereLocation]:
         locs: List[SevereLocation] = []
-        for r in ROADS_DATA:
-            center_node = r["nodes"][2]
-            locs.append(SevereLocation(
-                id=r["id"],
-                name=r["name"],
-                district=r["district"],
-                water_level_m=round(center_node["base_water"] / 100.0, 2),
-                severity="CRITICAL" if center_node["base_water"] >= 50.0 else "WARNING",
-                minutes_ago=random.randint(1, 5),
-                latitude=center_node["lat"],
-                longitude=center_node["lon"]
-            ))
-        for z in ZONES_DATA:
-            locs.append(SevereLocation(
-                id=z["id"],
-                name=z["name"],
-                district=z["district"],
-                water_level_m=round(z["base_water"] / 100.0, 2),
-                severity="CRITICAL" if z["base_water"] >= 50.0 else "WARNING",
-                minutes_ago=random.randint(1, 5),
-                latitude=z["center"][0],
-                longitude=z["center"][1]
-            ))
+        if not devices:
+            return locs
+
+        for d in devices:
+            if d.status in ("CRITICAL", "WARNING"):
+                locs.append(SevereLocation(
+                    id=d.device_id,
+                    name=f"{d.name} ({d.parent_name or ''})",
+                    district=d.road_name or d.parent_name or "TP.HCM",
+                    water_level_m=round(d.water_level_cm / 100.0, 2),
+                    severity=d.status,
+                    minutes_ago=1,
+                    latitude=d.latitude,
+                    longitude=d.longitude
+                ))
         return locs
 
 

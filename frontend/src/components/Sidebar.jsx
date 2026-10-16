@@ -26,6 +26,12 @@ const SEVERITY_COLORS = {
     bg: 'rgba(255, 0, 85, 0.24)',
     border: 'rgba(255, 0, 85, 0.5)',
     label: 'CRITICAL'
+  },
+  OFFLINE: {
+    color: '#94a3b8',
+    bg: 'rgba(148, 163, 184, 0.12)',
+    border: 'rgba(148, 163, 184, 0.3)',
+    label: 'OFFLINE'
   }
 };
 

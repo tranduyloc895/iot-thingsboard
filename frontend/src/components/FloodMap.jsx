@@ -35,6 +35,14 @@ const SEVERITY_CONFIG = {
     glow: '0 0 24px rgba(255, 0, 85, 0.95)',
     label: 'Ngập cực sâu (>50cm)',
     advisory: '⛔ NGUY HIỂM: Cấm xe máy & ô tô gầm thấp qua lại. Chuyển hướng ngay!'
+  },
+  OFFLINE: {
+    color: '#64748b',      // Slate Gray
+    bg: 'rgba(100, 116, 139, 0.16)',
+    border: 'rgba(100, 116, 139, 0.40)',
+    glow: 'none',
+    label: 'Mất tín hiệu (Offline)',
+    advisory: 'Trạm cảm biến hiện không có dữ liệu truyền về.'
   }
 };
 
@@ -270,15 +278,16 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
         const lon = node.longitude ?? node.lon;
         if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
 
-        const water = node.water_level_cm ?? node.base_water ?? 20.0;
-        const status = node.status || (water >= 50 ? 'CRITICAL' : water >= 35 ? 'WARNING' : water >= 20 ? 'ALERT' : 'SAFE');
-        const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.SAFE;
+        const water = node.water_level_cm ?? 0.0;
+        const status = node.status || (water >= 50 ? 'CRITICAL' : water >= 35 ? 'WARNING' : water >= 20 ? 'ALERT' : (water > 0 ? 'SAFE' : 'OFFLINE'));
+        const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.OFFLINE;
         const color = cfg.color;
+        const isOffline = status === 'OFFLINE';
 
         const iconHtml = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            <div style="position: absolute; width: 20px; height: 20px; border-radius: 50%; background: ${color}; opacity: 0.35; animation: radar-ping 2.2s infinite;"></div>
-            <div style="width: 10px; height: 10px; border-radius: 50%; background: ${color}; border: 2px solid #ffffff; box-shadow: 0 0 10px ${color}; z-index: 5;"></div>
+            ${!isOffline ? `<div style="position: absolute; width: 20px; height: 20px; border-radius: 50%; background: ${color}; opacity: 0.35; animation: radar-ping 2.2s infinite;"></div>` : ''}
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: ${color}; border: 2px solid ${isOffline ? '#64748b' : '#ffffff'}; box-shadow: ${isOffline ? 'none' : `0 0 10px ${color}`}; z-index: 5;"></div>
           </div>
         `;
 
@@ -321,15 +330,16 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
         const lon = node.longitude ?? node.lon;
         if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
 
-        const water = node.water_level_cm ?? node.base_water ?? 20.0;
-        const status = node.status || (water >= 50 ? 'CRITICAL' : water >= 35 ? 'WARNING' : water >= 20 ? 'ALERT' : 'SAFE');
-        const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.SAFE;
+        const water = node.water_level_cm ?? 0.0;
+        const status = node.status || (water >= 50 ? 'CRITICAL' : water >= 35 ? 'WARNING' : water >= 20 ? 'ALERT' : (water > 0 ? 'SAFE' : 'OFFLINE'));
+        const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.OFFLINE;
         const color = cfg.color;
+        const isOffline = status === 'OFFLINE';
 
         const iconHtml = `
           <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-            <div style="position: absolute; width: 20px; height: 20px; border-radius: 50%; background: ${color}; opacity: 0.35; animation: radar-ping 2.2s infinite;"></div>
-            <div style="width: 10px; height: 10px; border-radius: 50%; background: ${color}; border: 2px solid #ffffff; box-shadow: 0 0 10px ${color}; z-index: 5;"></div>
+            ${!isOffline ? `<div style="position: absolute; width: 20px; height: 20px; border-radius: 50%; background: ${color}; opacity: 0.35; animation: radar-ping 2.2s infinite;"></div>` : ''}
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: ${color}; border: 2px solid ${isOffline ? '#64748b' : '#ffffff'}; box-shadow: ${isOffline ? 'none' : `0 0 10px ${color}`}; z-index: 5;"></div>
           </div>
         `;
 

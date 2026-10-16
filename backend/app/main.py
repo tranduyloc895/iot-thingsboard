@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,6 +9,8 @@ from .models.schemas import DashboardData, WeatherData
 from .services.tide_service import TideService
 from .services.weather_service import WeatherService
 from .services.thingsboard_service import tb_service
+
+VN_TZ = timezone(timedelta(hours=7))
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -32,14 +34,14 @@ async def build_dashboard_data() -> DashboardData:
     devices = await tb_service.get_live_devices()
     summary = tb_service.get_city_summary(devices)
     tides = await TideService.get_tide_data()
-    severe = tb_service.get_severe_locations()
+    severe = tb_service.get_severe_locations(devices)
     roads = tb_service.get_flooded_roads(devices)
     zones = tb_service.get_flood_zones(devices)
     weather_raw = await WeatherService.get_current_weather()
     weather = WeatherData(**weather_raw)
     
     return DashboardData(
-        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        timestamp=datetime.now(VN_TZ).strftime("%Y-%m-%d %H:%M:%S"),
         summary=summary,
         tides=tides,
         severe_locations=severe,
@@ -77,7 +79,8 @@ async def get_devices():
 
 @app.get("/api/v1/severe-locations")
 async def get_severe_locations():
-    return tb_service.get_severe_locations()
+    devices = await tb_service.get_live_devices()
+    return tb_service.get_severe_locations(devices)
 
 @app.websocket("/ws/live")
 async def websocket_live_stream(websocket: WebSocket):

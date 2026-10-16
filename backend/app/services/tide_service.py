@@ -1,7 +1,9 @@
 import math
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List
 from ..models.schemas import TideStation, TideHourlyPoint
+
+VN_TZ = timezone(timedelta(hours=7))
 
 # 10 TRẠM THỦY VĂN & LƯU VỰC NGẬP TƯƠNG ỨNG 10 HOTSPOT TP.HCM
 STATIONS_CONFIG = [
@@ -93,7 +95,7 @@ class TideService:
         """
         Lấy thông tin thủy văn & triều cường thời gian thực cho toàn bộ 10 trạm/điểm ngập của TP.HCM.
         """
-        now = datetime.now()
+        now = datetime.now(VN_TZ)
         current_hour = now.hour
         results: List[TideStation] = []
 
