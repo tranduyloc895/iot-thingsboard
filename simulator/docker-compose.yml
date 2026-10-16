@@ -10,7 +10,7 @@ services:
       - NODE_INDEX=${NODE_INDEX:?Set NODE_INDEX in 0..49 or use compose.fleet.yml}
       - STATE_DIR=/state
       # Địa chỉ IP của ThingsBoard K8s Service (Cluster IP hoặc Bastion private IP)
-      - THINGSBOARD_HOST=${THINGSBOARD_HOST:-10.0.0.225}
+      - THINGSBOARD_HOST=${THINGSBOARD_HOST:-10.0.1.200}
       - PORT=${PORT:-1883}
       # Auto-Provisioning Credentials từ ThingsBoard Device Profile
       - PROVISION_KEY=${PROVISION_KEY:-}
