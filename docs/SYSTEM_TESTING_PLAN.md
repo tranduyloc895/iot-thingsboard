@@ -125,21 +125,28 @@ kubectl get pods -A -o wide --show-labels
   - [x] `tb-node` consume message từ Kafka, ghi vào PostgreSQL DBaaS bảng `ts_kv`.
   - [x] Redis cập nhật trạng thái thiết bị là `Active/Online`.
 
-### 📊 Luồng 2: Người dân & Cán bộ xem Dashboard thời gian thực
-* **Kịch bản**: Truy cập trình duyệt `https://thingsboard.web-ui.com`.
+### 📊 Luồng 2: Người dân xem Cổng thông tin Ngập lụt thời gian thực (HCM Flood Web Portal)
+* **Đối tượng**: Người dân & Cán bộ tra cứu công cộng (Public Access).
+* **Kịch bản**: Truy cập trình duyệt `http://flood.web-ui.com` (hoặc `http://flood.dev.web-ui.com`).
 * **Chuỗi xác thực**:
-  - [x] Giao diện đăng nhập ThingsBoard tải về thành công (SPA Web UI).
-  - [x] Đăng nhập tài khoản cán bộ vận hành đô thị.
-  - [x] Mở Dashboard bản đồ ngập: Các widget hiển thị đồng hồ đo mực nước và biểu đồ lịch sử 24h.
-  - [x] Khi trạm IoT gửi telemetry mới ở Luồng 1, widget trên Dashboard **tự động nhảy số tức thì qua kết nối WebSocket** mà không cần reload trang.
+  - [x] Giao diện Bản đồ số GIS ngập lụt TP.HCM tải về thành công (React + Vite + Leaflet).
+  - [x] TopBar hiển thị đầy đủ các chỉ số: Số điểm an toàn, Cảnh báo, Ngập nguy cấp, Mực nước TB và tổng số trạm online.
+  - [x] Biểu đồ Thủy triều 24h (Tide Chart) hiển thị mô phỏng mực nước và cảnh báo giờ đỉnh triều.
+  - [x] Sidebar hiển thị danh sách các điểm ngập nghiêm trọng nhất (Severe Locations).
+  - [x] Kết nối **WebSocket (`/ws/live`)** duy trì liên tục ở trạng thái `101 Switching Protocols`.
+  - [x] Khi trạm IoT gửi telemetry mới ở Luồng 1, bản đồ tự động đổi màu tuyến đường (Xanh ➔ Vàng/Đỏ) và cập nhật số liệu **tức thì qua WebSocket** mà không cần reload trang.
 
-### 🔐 Luồng 3: Quản trị viên truy cập hạ tầng qua VPN
-* **Kịch bản**: Quản trị viên kết nối từ mạng bên ngoài để quản lý cụm.
+### 🔐 Luồng 3: Quản trị viên & Kỹ sư vận hành truy cập an toàn qua VPN
+* **Đối tượng**: Kỹ sư DevOps, Cán bộ quản trị trạm IoT & An ninh mạng.
+* **Kịch bản**: Quản trị viên kết nối từ mạng bên ngoài để quản lý cụm qua dải mạng an toàn.
 * **Chuỗi xác thực**:
   - [x] Khởi tạo kết nối VPN GlobalProtect tới Firewall Palo Alto (hoặc OpenVPN Bastion).
   - [x] Nhận IP nội bộ an toàn trong dải quản trị.
-  - [x] Truy cập được vào các Admin Web UI nội bộ: Devtron, ArgoCD, Grafana.
-  - [x] Ngắt kết nối VPN ➔ Thử truy cập lại các URL nội bộ ➔ Không thể truy cập (Bảo vệ bí mật hạ tầng).
+  - [x] Truy cập được vào các Admin Web UI nội bộ: 
+    - **ThingsBoard Admin UI** (`http://thingsboard.web-ui.com`): Quản lý vòng đời thiết bị, cấu hình Device Profile, Access Token, Rule Chain xử lý sự kiện.
+    - **ArgoCD / Devtron UI**: Quản trị vòng đời ứng dụng GitOps K8s.
+    - **Grafana UI** (`http://grafana.flood.web-ui.com`): Giám sát hạ tầng, logs Loki và metrics Prometheus.
+  - [x] Ngắt kết nối VPN ➔ Thử truy cập lại các URL quản trị ➔ Bị chặn hoàn toàn (Bảo vệ tuyệt đối trang quản trị khỏi tấn công Brute-force từ Internet).
 
 ### 🚀 Luồng 4: Quy trình GitOps CI/CD tự động
 * **Kịch bản**: Kỹ sư sửa đổi một thông số trong Helm values (ví dụ: tăng replica của `tb-web-ui` từ 2 lên 3) và commit lên nhánh `main`.

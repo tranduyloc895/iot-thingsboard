@@ -121,16 +121,16 @@ Trạm Cảm Biến IoT
 
 ---
 
-## 3. Luồng 2 — Người Dùng Xem Dashboard
+## 3. Luồng 2 — Người Dân Xem Bản Đồ Ngập (Public Web Portal)
 
-**Mô tả**: Cán bộ quản lý và người dân truy cập dashboard giám sát ngập real-time.
+**Mô tả**: Người dân và cán bộ chỉ huy tra cứu bản đồ ngập lụt TP.HCM thời gian thực (GIS Leaflet & WebSocket).
 
 ```
-Trình duyệt / Mobile App
-(https://flood.web-ui.com)
-         │ HTTPS (TCP 443)
+Người dân / Trình duyệt Mobile & PC
+(http://flood.web-ui.com)
+         │ HTTP/HTTPS (TCP 80/443)
          ▼
-PA-FW (Lọc SSL, kiểm tra URL)
+PA-FW (Kiểm tra App-ID, chống tấn công L7 Web)
          │
          ▼
 ILB Ingress (10.0.2.192)
@@ -140,48 +140,44 @@ Nginx Ingress Controller
 (host: flood.web-ui.com)
          │
          ▼
-TB Web UI (2-4 replicas)
-[Phục vụ giao diện HTML/JS]
-         │ WebSocket / REST API
+HCM Flood Frontend Pod (React + Vite + Leaflet)
+         │ WebSocket (/ws/live) & REST API
          ▼
-TB Node (Core)
+HCM Flood Backend Pod (FastAPI)
+         │
+         ▼
+ThingsBoard Node (tb-node)
     │           │
     ▼           ▼
  Redis       PostgreSQL
- [Session]   [Telemetry, alarm, dashboard]
+ [Session]   [Telemetry, alarm, status]
 
 Kết quả hiển thị real-time (không tải lại trang):
-  ● Biểu đồ mực nước theo thời gian
-  ● Bản đồ trạng thái trạm cảm biến
-  ● Cảnh báo ngập đỏ / vàng / xanh
+  ● Tuyến đường đổi màu (Xanh: An toàn | Vàng: Cảnh báo | Đỏ: Ngập sâu)
+  ● Biểu đồ thủy triều 24h & dự báo giờ đỉnh triều
+  ● Bảng xếp hạng các điểm ngập nặng nhất toàn thành phố
 ```
 
 ---
 
-## 4. Luồng 3 — Admin Quản Trị Hệ Thống
+## 4. Luồng 3 — Admin & Kỹ Sư Quản Trị Hệ Thống (Secure VPN)
 
-**Mô tả**: Kỹ sư vận hành quản lý cluster, deployment, monitoring qua VPN bảo mật.
+**Mô tả**: Kỹ sư vận hành quản lý cluster, cấu hình thiết bị IoT, deployment và monitoring qua VPN bảo mật.
 
 ```
 Admin / Kỹ sư vận hành
-         │ VPN GlobalProtect
+         │ VPN GlobalProtect / OpenVPN
          ▼
-Client GlobalProtect (IP: 192.168.100.x)
-         │ VPN S2S Tunnel
-         ▼
-Admin Services Zone (subnet-public 10.0.1.0/24)
-┌──────────────────────────────────────────────┐
-│  Devtron (CD UI) | ArgoCD | Grafana          │
-└──────────────────────────────────────────────┘
+Mạng quản trị an toàn (Subnet Private)
          │
-         │ DNS nội bộ → ILB Ingress → Nginx → TB Admin UI
-         ▼
-Quản lý:
-  ● Kubernetes resources (pods, services, secrets)
-  ● Helm releases (helm upgrade thingsboard)
-  ● ArgoCD Applications (sync, rollback)
-  ● Grafana (log query, metrics)
-  ● ThingsBoard Admin (tenants, devices, rule chains)
+         ├──► ThingsBoard Admin UI (http://thingsboard.web-ui.com)
+         │    [Quản lý Device Profile, Access Token, Rule Chains]
+         │
+         ├──► Devtron & ArgoCD UI (https://argocd.internal)
+         │    [Quản trị vòng đời K8s, GitOps CI/CD auto-sync]
+         │
+         └──► Grafana Monitoring (http://grafana.flood.web-ui.com)
+              [Giám sát CPU/RAM, Kafka lag, truy vấn logs Loki]
 ```
 
 ---

@@ -179,20 +179,30 @@ curl -k -X POST "https://10.0.2.192/api/v1/STATION_NVQ_001/telemetry" \
   - Mã trả về `200 OK`.
   - Log của pod `tb-node` ghi nhận: `Processing telemetry for device STATION_NVQ_001`.
 
-### Bước 3.2: Luồng 2 — Người dùng xem Dashboard & WebSocket Real-time
-1. Trên máy trạm, mở trình duyệt truy cập: `https://thingsboard.web-ui.com` (thêm host vào file `hosts` nếu chưa trỏ public DNS).
-2. Đăng nhập tài khoản điều hành.
-3. Mở tab **Dashboard** ➔ **HCM Flood Monitoring**.
-4. Chạy lại lệnh gửi tin ở Bước 3.1 ➔ Quan sát màn hình Dashboard:
-* **Kỳ vọng**: Kim đồng hồ đo mực nước và biểu đồ lập tức cập nhật giá trị mới tức thời qua WebSocket mà không cần reload trang.
+### Bước 3.2: Luồng 2 — Người dân xem Cổng thông tin Ngập lụt (Web Flood Portal) & WebSocket Real-time
+1. Trên máy trạm, mở trình duyệt truy cập: `http://flood.web-ui.com` (hoặc `http://flood.dev.web-ui.com`).
+2. Quan sát giao diện Cổng thông tin Ngập lụt TP.HCM:
+   - **Bản đồ số GIS (Leaflet)**: Hiển thị mạng lưới trạm quan trắc và các tuyến đường trọng điểm (Nguyễn Văn Quá, Phan Huy Ích, Huỳnh Tấn Phát, Thảo Điền...).
+   - **TopBar**: Thống kê số trạm an toàn, cảnh báo, nguy cấp và tổng số trạm online.
+   - **Sidebar**: Biểu đồ thủy triều 24h và danh sách các điểm ngập nặng nhất.
+3. Bấm **F12** (Developer Tools) ➔ Tab **Network** ➔ Lọc **WS**:
+   - Xác nhận kết nối WebSocket `/ws/live` đang mở ở trạng thái `101 Switching Protocols`.
+4. Trên máy `simulator`, gửi bản tin telemetry mực nước dâng cao:
+   ```bash
+   mosquitto_pub -h 10.0.1.200 -p 1883 -u "DZVX54HKFE84cHWzcRfF" \
+     -t "v1/devices/me/telemetry" \
+     -m '{"water_level": 85.5}'
+   ```
+* **Kỳ vọng**: Tuyến đường tương ứng trên bản đồ Web Flood lập tức đổi màu (Xanh ➔ Đỏ) và số đo mực nước trên widget cập nhật ngay tức thì qua WebSocket mà không cần reload trang.
 
 ### Bước 3.3: Luồng 3 — Quản trị viên truy cập an toàn qua VPN
 1. Bật phần mềm **GlobalProtect** hoặc **OpenVPN** để kết nối vào dải quản trị.
-2. Mở trình duyệt truy cập các dịch vụ nội bộ:
-   - ArgoCD: `https://argocd.internal`
-   - Grafana: `http://10.0.2.x:3000`
-3. Ngắt kết nối VPN và thử F5 lại trang:
-* **Kỳ vọng**: Khi bật VPN thì truy cập mượt mà; khi tắt VPN thì toàn bộ kết nối bị ngắt kết nối (bảo vệ tuyệt đối các trang quản trị).
+2. Mở trình duyệt truy cập các dịch vụ quản trị nội bộ:
+   - **ThingsBoard Admin UI**: `http://thingsboard.web-ui.com` (Đăng nhập tài khoản điều hành quản lý thiết bị & Rule Chain).
+   - **ArgoCD**: `https://argocd.internal` (Quản trị trạng thái đồng bộ ứng dụng K8s).
+   - **Grafana**: `http://grafana.flood.web-ui.com` (hoặc `http://10.0.2.x:3000` - Giám sát metrics & logs Loki).
+3. Ngắt kết nối VPN và thử F5 lại các trang quản trị:
+* **Kỳ vọng**: Khi bật VPN thì truy cập mượt mà; khi tắt VPN thì toàn bộ kết nối bị từ chối / timeout (Bảo vệ tuyệt đối các trang quản trị khỏi tấn công từ Internet).
 
 ### Bước 3.4: Luồng 4 — Kiểm thử GitOps CI/CD tự động
 1. Trên máy tính phát triển, sửa 1 giá trị nhỏ trong file `values.yaml` (ví dụ: chú thích hoặc chỉnh nhẹ replica).
