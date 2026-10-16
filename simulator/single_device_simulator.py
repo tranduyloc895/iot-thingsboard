@@ -965,12 +965,12 @@ def provision_device():
             print(f"[{DEVICE_NAME}] MQTT provisioning bị từ chối rc={rc}", flush=True)
             completed.set()
         else:
+            # ThingsBoard provision-only sessions can ignore SUBSCRIBE/SUBACK.
+            # Queue subscribe before publish, but never wait for on_subscribe.
             client.subscribe("/provision/response", qos=1)
-
-    def on_subscribe(client, userdata, mid, granted_qos):
-        client.publish("/provision/request", json.dumps({
-            "deviceName": DEVICE_NAME, "provisionDeviceKey": PROVISION_KEY,
-            "provisionDeviceSecret": PROVISION_SECRET}), qos=1)
+            client.publish("/provision/request", json.dumps({
+                "deviceName": DEVICE_NAME, "provisionDeviceKey": PROVISION_KEY,
+                "provisionDeviceSecret": PROVISION_SECRET}), qos=1)
 
     def on_message(client, userdata, message):
         try:
@@ -984,7 +984,6 @@ def provision_device():
         completed.set()
 
     client.on_connect = on_connect
-    client.on_subscribe = on_subscribe
     client.on_message = on_message
     try:
         client.connect(THINGSBOARD_HOST, PORT, 60)

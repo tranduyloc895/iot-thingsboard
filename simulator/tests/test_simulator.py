@@ -31,6 +31,23 @@ class SimulatorTests(unittest.TestCase):
             self.assertEqual(len({m.DEVICE_NAME for m in modules}), 50)
             self.assertEqual([m.assigned_station['node_num'] for m in modules], list(range(1, 51)))
 
+    def test_provision_request_does_not_wait_for_suback(self):
+        with tempfile.TemporaryDirectory() as state:
+            module = load(0, state)
+            client = MagicMock()
+            def send(topic, payload, **kwargs):
+                self.assertEqual(topic, '/provision/request')
+                message = MagicMock()
+                message.payload = b'{"status":"SUCCESS","credentialsValue":"test-token"}'
+                client.on_message(client, None, message)
+            client.publish.side_effect = send
+            # No SUBACK callback: provision-only ThingsBoard sessions may ignore it.
+            client.loop_start.side_effect = lambda: client.on_connect(client, None, {}, 0)
+            with patch.object(module.mqtt, 'Client', return_value=client):
+                self.assertEqual(module.provision_device(), 'test-token')
+            client.subscribe.assert_called_once()
+            client.publish.assert_called_once()
+
     def test_publish_failure_is_not_reported_as_success_and_client_stops(self):
         with tempfile.TemporaryDirectory() as state:
             module = load(0, state)
