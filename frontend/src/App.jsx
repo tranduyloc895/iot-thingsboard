@@ -292,13 +292,11 @@ export default function App() {
         onSelectLocation={(loc) => setSelectedLocation(loc)}
       />
 
-      {/* Floating Top Bar (Live Status, Đồng bộ Timestamp, Thời tiết & Clock) */}
+      {/* Floating Top Bar (Mực nước TB, Thời tiết & Clock) */}
       <TopBar 
         weather={data.weather} 
-        wsStatus={wsStatus}
-        lastSyncTime={lastSyncTime}
-        packetCount={packetCount}
         isPinging={isPinging}
+        avgWater={data.summary?.avg_water_level_cm}
       />
     </div>
   );

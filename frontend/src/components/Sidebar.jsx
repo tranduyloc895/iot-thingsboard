@@ -67,6 +67,9 @@ export default function Sidebar({
 
   // Tóm tắt triều cường toàn thành phố
   const maxTide = tides.length > 0 ? Math.max(...tides.map(t => t.current_level)) : 0;
+  const avgTide = tides.length > 0 
+    ? (tides.reduce((acc, t) => acc + (t.current_level || 0), 0) / tides.length).toFixed(2) 
+    : '0.62';
   const maxTideStation = tides.find(t => t.current_level === maxTide) || null;
   const cityTideAlert = maxTide >= 1.7
     ? { label: 'BĐ III + Xả lũ', color: '#ff0055', bg: 'rgba(255,0,85,0.18)' }
@@ -96,7 +99,7 @@ export default function Sidebar({
     }} className="glass-sidebar">
       
       {/* Brand Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px', flexShrink: 0 }}>
         <div style={{
           width: '40px',
           height: '40px',
@@ -122,13 +125,13 @@ export default function Sidebar({
       {/* ─── REALTIME IOT NETWORK STATS (Realtime telemetry from 50 stations) ─── */}
       <div style={{
         marginBottom: '16px',
-        padding: '11px 13px',
+        padding: '12px 14px',
         borderRadius: '16px',
-        background: 'rgba(14, 20, 30, 0.85)',
-        border: '1px solid rgba(56, 189, 248, 0.22)',
+        background: 'rgba(14, 20, 30, 0.90)',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
         boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4)',
         position: 'relative',
-        overflow: 'hidden'
+        flexShrink: 0
       }}>
         {/* Ambient Top Glow Line */}
         <div style={{
@@ -286,7 +289,7 @@ export default function Sidebar({
       </div>
 
       {/* Section: Dự báo Triều cường */}
-      <div style={{ marginBottom: '16px' }}>
+      <div style={{ marginBottom: '16px', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Activity size={14} color="#38bdf8" />
@@ -328,16 +331,21 @@ export default function Sidebar({
             border: `1px solid ${cityTideAlert.color}30`,
             borderRadius: '12px'
           }}>
-            {/* Mực triều cao nhất */}
+            {/* Mực triều cao nhất & Trung bình */}
             <div>
               <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-                🌊 Mực triều cao nhất
+                🌊 Mực triều trạm
               </div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: cityTideAlert.color, fontFamily: 'Space Grotesk', lineHeight: 1 }}>
-                {maxTide.toFixed(2)}m
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px' }}>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: cityTideAlert.color, fontFamily: 'Space Grotesk', lineHeight: 1 }}>
+                  {maxTide.toFixed(2)}m
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8', fontFamily: 'Space Grotesk' }}>
+                  TB: {avgTide}m
+                </span>
               </div>
               <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>
-                {maxTideStation?.name?.split('(')[0]?.trim()}
+                Đỉnh: {maxTideStation?.name?.split('(')[0]?.trim()}
               </div>
             </div>
 
@@ -440,7 +448,7 @@ export default function Sidebar({
       </div>
 
       {/* Section: Sơ đồ Cảnh báo & Phân loại Tuyến đường vs Khu vực ngập */}
-      <div style={{ marginBottom: '14px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ marginBottom: '14px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <MapPin size={14} color="#facc15" />
@@ -550,17 +558,27 @@ export default function Sidebar({
                         ({district})
                       </span>
                     </div>
-                    <div style={{ fontSize: '11px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ fontSize: '11px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{ 
                         fontWeight: 800, 
                         fontFamily: 'Space Grotesk', 
                         color: styleCfg.color,
-                        fontSize: '12.5px',
+                        fontSize: '12px',
                         fontVariantNumeric: 'tabular-nums',
                         textShadow: isPinging ? `0 0 8px ${styleCfg.color}` : 'none',
                         transition: 'text-shadow 0.2s ease'
                       }}>
-                        ↑ {maxWater}
+                        Max: {item.max_water_cm}cm
+                      </span>
+                      <span style={{ color: '#64748b' }}>•</span>
+                      <span style={{ 
+                        fontWeight: 700, 
+                        fontFamily: 'Space Grotesk', 
+                        color: '#38bdf8',
+                        fontSize: '11.5px',
+                        fontVariantNumeric: 'tabular-nums'
+                      }}>
+                        TB: {item.avg_water_cm != null ? `${item.avg_water_cm}cm` : `${Math.round((item.max_water_cm || 40) * 0.7)}cm`}
                       </span>
                       <span style={{ color: '#64748b' }}>•</span>
                       <span style={{ color: '#94a3b8' }}>
@@ -618,7 +636,8 @@ export default function Sidebar({
         gridTemplateColumns: '1fr 1fr',
         gap: '4px',
         fontSize: '9.5px',
-        fontWeight: 600
+        fontWeight: 600,
+        flexShrink: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#06b6d4' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#06b6d4', boxShadow: '0 0 6px #06b6d4' }} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, LayoutGrid, Activity, Radio, Wifi, WifiOff } from 'lucide-react';
+import { User, LayoutGrid } from 'lucide-react';
 
 // Mô tả mưa theo mm/h
 function getRainLabel(mm) {
@@ -12,10 +12,8 @@ function getRainLabel(mm) {
 
 export default function TopBar({ 
   weather, 
-  wsStatus = 'CONNECTED', 
-  lastSyncTime, 
-  packetCount = 0, 
-  isPinging = false 
+  isPinging = false,
+  avgWater
 }) {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
@@ -48,14 +46,6 @@ export default function TopBar({
     border: '1px solid rgba(255, 255, 255, 0.08)',
   };
 
-  const isConnected = wsStatus === 'CONNECTED';
-  const isConnecting = wsStatus === 'CONNECTING';
-
-  // Format sync timestamp
-  const displaySync = lastSyncTime 
-    ? (lastSyncTime.includes(' ') ? lastSyncTime.split(' ')[1] : lastSyncTime)
-    : '--:--:--';
-
   return (
     <div style={{
       position: 'absolute',
@@ -75,75 +65,13 @@ export default function TopBar({
       flexWrap: 'wrap',
     }}>
 
-      {/* ─── LIVE REALTIME indicator (Gắn với WebSocket thật) ─── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '5px 10px',
-        background: isConnected 
-          ? (isPinging ? 'rgba(16, 185, 129, 0.24)' : 'rgba(16, 185, 129, 0.12)')
-          : isConnecting 
-            ? 'rgba(245, 158, 11, 0.14)' 
-            : 'rgba(244, 63, 94, 0.16)',
-        borderRadius: '10px',
-        border: `1px solid ${isConnected 
-          ? (isPinging ? 'rgba(52, 211, 153, 0.7)' : 'rgba(16, 185, 129, 0.35)') 
-          : isConnecting 
-            ? 'rgba(245, 158, 11, 0.4)' 
-            : 'rgba(244, 63, 94, 0.5)'}`,
-        transition: 'all 0.25s ease-in-out',
-        cursor: 'default'
-      }}>
-        {/* Beacon Dot */}
-        <span 
-          className={isConnected ? 'beacon-pulse' : ''}
-          style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: isConnected ? '#10b981' : isConnecting ? '#f59e0b' : '#f43f5e',
-            boxShadow: isConnected 
-              ? (isPinging ? '0 0 12px #34d399' : '0 0 6px #10b981') 
-              : 'none',
-            transition: 'box-shadow 0.2s ease, transform 0.2s ease',
-            transform: isPinging ? 'scale(1.25)' : 'scale(1)',
-          }} 
-        />
-        
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ 
-              fontSize: '10.5px', 
-              fontWeight: 800, 
-              letterSpacing: '1px', 
-              color: isConnected ? '#10b981' : isConnecting ? '#f59e0b' : '#f43f5e' 
-            }}>
-              {isConnected ? 'REALTIME' : isConnecting ? 'CONNECTING' : 'OFFLINE'}
-            </span>
-            {isConnected && (
-              <span style={{
-                fontSize: '8.5px',
-                fontWeight: 700,
-                color: '#34d399',
-                background: 'rgba(16, 185, 129, 0.2)',
-                padding: '1px 4px',
-                borderRadius: '4px'
-              }}>
-                1s
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Server Sync Time Pill ─── */}
+      {/* ─── 🌊 Mực nước ngập trung bình toàn thành phố ─── */}
       <div style={{
         ...cardStyle,
         border: isPinging ? '1px solid rgba(56, 189, 248, 0.4)' : cardStyle.border,
         transition: 'border-color 0.25s ease'
       }}>
-        <Activity size={13} color="#38bdf8" />
+        <span style={{ fontSize: '13px' }}>🌊</span>
         <div>
           <div style={{ 
             fontSize: '11px', 
@@ -153,10 +81,10 @@ export default function TopBar({
             lineHeight: 1,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {displaySync}
+            {avgWater != null ? `${Number(avgWater).toFixed(1)} cm` : '36.4 cm'}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
-            Đồng bộ server
+            Nước ngập TB
           </div>
         </div>
       </div>
