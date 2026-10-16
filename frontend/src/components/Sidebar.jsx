@@ -179,7 +179,7 @@ export default function Sidebar({
               transform: isPinging ? 'scale(1.3)' : 'scale(1)',
               transition: 'all 0.2s ease'
             }} />
-            <span className="tabular-nums">{summary?.total_active_devices ?? 50} TRẠM ONLINE</span>
+            <span className="tabular-nums">{summary?.total_active_devices ?? 0} TRẠM ONLINE</span>
           </div>
         </div>
 
@@ -207,7 +207,7 @@ export default function Sidebar({
               textShadow: isPinging ? '0 0 8px rgba(56, 189, 248, 0.8)' : 'none',
               transition: 'text-shadow 0.2s ease'
             }}>
-              {summary?.avg_water_level_cm ? `${summary.avg_water_level_cm.toFixed(1)}` : '36.4'}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>cm</span>
+              {summary?.avg_water_level_cm != null ? `${Number(summary.avg_water_level_cm).toFixed(1)}` : '0.0'}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>cm</span>
             </div>
           </div>
 
@@ -231,7 +231,7 @@ export default function Sidebar({
               marginTop: '2px',
               fontVariantNumeric: 'tabular-nums'
             }}>
-              {summary?.critical_count ?? 22}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>điểm</span>
+              {summary?.critical_count ?? 0}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>điểm</span>
             </div>
           </div>
 
@@ -255,7 +255,7 @@ export default function Sidebar({
               marginTop: '2px',
               fontVariantNumeric: 'tabular-nums'
             }}>
-              {summary?.alert_count ?? 16}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>điểm</span>
+              {summary?.alert_count ?? 0}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>điểm</span>
             </div>
           </div>
         </div>

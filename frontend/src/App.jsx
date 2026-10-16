@@ -141,46 +141,14 @@ const TIDES_INITIAL = [
 const INITIAL_DATA = {
   timestamp: new Date().toISOString(),
   summary: {
-    safe_count: 12,
-    alert_count: 16,
-    critical_count: 22,
-    avg_water_level_cm: 36.4,
-    total_active_devices: 50
+    safe_count: 0,
+    alert_count: 0,
+    critical_count: 0,
+    avg_water_level_cm: 0.0,
+    total_active_devices: 0
   },
   tides: TIDES_INITIAL,
-  severe_locations: [
-    ...(ROADS_INITIAL || []).map((r, i) => {
-      const centerNode = (r.nodes && r.nodes[2]) || (r.nodes && r.nodes[0]) || {};
-      const lat = centerNode.latitude ?? centerNode.lat ?? (r.coordinates && r.coordinates[0] && r.coordinates[0][0]) ?? 10.7769;
-      const lon = centerNode.longitude ?? centerNode.lon ?? (r.coordinates && r.coordinates[0] && r.coordinates[0][1]) ?? 106.7009;
-      const maxW = r.max_water_cm ?? r.base_water ?? 50.0;
-      return {
-        id: r.id || `road-${i + 1}`,
-        name: r.name || 'Tuyến đường',
-        district: r.district || 'TP.HCM',
-        water_level_m: Number((maxW / 100).toFixed(2)),
-        severity: r.severity || 'CRITICAL',
-        minutes_ago: 3,
-        latitude: lat,
-        longitude: lon
-      };
-    }),
-    ...(ZONES_INITIAL || []).map((z, i) => {
-      const lat = (z.center && z.center[0]) ?? 10.7769;
-      const lon = (z.center && z.center[1]) ?? 106.7009;
-      const maxW = z.max_water_cm ?? z.base_water ?? 55.0;
-      return {
-        id: z.id || `zone-${i + 1}`,
-        name: z.name || 'Khu vực ngập',
-        district: z.district || 'TP.HCM',
-        water_level_m: Number((maxW / 100).toFixed(2)),
-        severity: z.severity || 'CRITICAL',
-        minutes_ago: 3,
-        latitude: lat,
-        longitude: lon
-      };
-    })
-  ],
+  severe_locations: [],
   devices: [],
   roads: ROADS_INITIAL || [],
   zones: ZONES_INITIAL || [],
@@ -202,9 +170,31 @@ export default function App() {
       ? `ws://${host}:8000/ws/live` 
       : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/live`;
 
-    let ws = null;
-    let reconnectTimeout = null;
-    let pingTimeout = null;
+    const fetchSnapshot = async () => {
+      try {
+        const apiUrl = isLocalDev 
+          ? `http://${host}:8000/api/v1/dashboard` 
+          : `${window.location.protocol}//${window.location.host}/api/v1/dashboard`;
+        const res = await fetch(apiUrl);
+        if (res.ok) {
+          const parsed = await res.json();
+          if (parsed && (parsed.devices || parsed.roads || parsed.zones || parsed.summary)) {
+            setData(prev => ({
+              ...prev,
+              ...parsed,
+              roads: parsed.roads && parsed.roads.length > 0 ? parsed.roads : prev.roads,
+              zones: parsed.zones && parsed.zones.length > 0 ? parsed.zones : prev.zones,
+              weather: parsed.weather ?? prev.weather,
+              summary: parsed.summary ?? prev.summary
+            }));
+            if (parsed.timestamp) setLastSyncTime(parsed.timestamp);
+          }
+        }
+      } catch (e) {
+        // Ignored
+      }
+    };
+    fetchSnapshot();
 
     const connectWS = () => {
       try {

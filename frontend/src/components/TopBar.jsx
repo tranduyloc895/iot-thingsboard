@@ -81,7 +81,7 @@ export default function TopBar({
             lineHeight: 1,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {avgWater != null ? `${Number(avgWater).toFixed(1)} cm` : '36.4 cm'}
+            {avgWater != null ? `${Number(avgWater).toFixed(1)} cm` : '0.0 cm'}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
             Nước ngập TB
