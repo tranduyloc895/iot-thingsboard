@@ -191,7 +191,7 @@ kubectl get pods -A -o wide --show-labels
 | Mã TC | Kịch bản cố tình gây lỗi (Chaos Injection) | Hành vi của hệ thống | Tiêu chuẩn Đạt (SLA) |
 |---|---|---|---|
 | **CHAOS-01** | Xóa đột ngột Pod `tb-mqtt-transport-0` | Kubernetes Deployment tự động tạo lại Pod mới trong vài giây; ILB định tuyến tạm sang Pod thứ hai | Không mất dữ liệu, gián đoạn < 5s |
-| **CHAOS-02** | Xóa Pod Kafka StatefulSet (`tb-kafka-0`) | Pod được tạo lại, tự động mount lại chính xác Persistent Volume `highio` cũ | Dữ liệu hàng đợi còn nguyên, phục hồi hoàn toàn |
+| **CHAOS-02** | Xóa Pod Kafka StatefulSet (`iot-thingsboard-kafka-0`) | Pod được tạo lại trong 45s, tự động mount lại chính xác Persistent Volume `highio` cũ (`pvc-ee53db62...`). Bản tin và file kiểm thử còn nguyên 100% | ✅ **ĐẠT (PASS)**<br>- File: `CMC_CLOUD_BLOCK_STORAGE_PERSISTENT_OK`<br>- Message: `CANH_BAO_NGAP_TPHCM_KHONG_BI_MAT_KHI_RESTART` |
 | **CHAOS-03** | Rút dây mạng / Tắt 1 Worker Node trong cụm | K8s Control Plane phát hiện Node `NotReady`, tự động evict và schedule lại các Pod sang Worker Node còn lại | Cụm tự phục hồi trong vòng 1-2 phút |
 | **CHAOS-04** | Ngắt kết nối mạng của Firewall Active (PA-FW1) | PA-FW2 lập tức chiếm quyền Active | Toàn bộ phiên kết nối duy trì, rớt không quá 1-2 gói tin |
 

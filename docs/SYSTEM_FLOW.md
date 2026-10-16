@@ -314,8 +314,7 @@ Grafana (grafana.flood.web-ui.com)
 | **Redis** | CMC DBaaS (external) | ✅ Có backup | Cache state, recovery nhanh |
 | **TB Node logs** | emptyDir → Promtail thu | ⚠️ Tạm | Promtail đẩy lên Loki S3 |
 | **Loki chunks** | CMC S3 `hcm-flood-logs` | ✅ 30 ngày | Object storage bền vững |
-| **Kafka messages** | emptyDir (RAM) | ❌ Tạm | IoT real-time, thiết bị gửi lại ngay |
-| **Zookeeper metadata** | emptyDir | ❌ Tạm | Khởi tạo lại nhanh |
+| **Kafka messages** | CMC Cinder PV `highio` (10Gi) | ✅ Bền vững | Hàng đợi tin nhắn Zero-Message-Loss |
+| **Zookeeper metadata** | CMC Cinder PV `highio` (5Gi) | ✅ Bền vững | Metadata cụm Kafka & đồng bộ phân tán |
 
-> **Triết lý**: Cluster là **ephemeral** — có thể tạo lại bất cứ lúc nào.  
-> Data là **eternal** — luôn được bảo vệ tại CMC DBaaS & S3 ngoài cluster.
+> **Triết lý**: Hạ tầng ứng dụng linh hoạt, dữ liệu quan trọng luôn được bảo vệ bền vững tại CMC DBaaS, S3 & Block Storage Cinder.
