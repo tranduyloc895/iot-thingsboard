@@ -1,0 +1,19 @@
+controller:
+  ingressClassResource:
+    name: nginx-dev
+    enabled: true
+    default: false
+    controllerValue: "k8s.io/ingress-nginx-dev"
+  ingressClass: nginx-dev
+  electionID: ingress-controller-leader-dev
+  service:
+    type: LoadBalancer
+  metrics:
+    enabled: true
+    service:
+      clusterIP: None
+      enabled: true
+      type: ClusterIP
+  podAnnotations:
+    prometheus.io/port: "10254"
+    prometheus.io/scrape: "true"
