@@ -52,7 +52,7 @@ const HCMC_BOUNDS = [
   [11.1500, 107.0500]  // Đông Bắc TP.HCM (Củ Chi / Bình Dương / Đồng Nai)
 ];
 
-export default function FloodMap({ devices, severeLocations, selectedLocation, roads = [], zones = [] }) {
+export default function FloodMap({ selectedLocation, roads = [], zones = [] }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const roadsLayerRef = useRef(null);
@@ -104,10 +104,10 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
     if (!showRoads || !roads || roads.length === 0) return;
 
     roads.forEach(road => {
-      const maxWater = road.max_water_cm ?? road.base_water ?? 40.0;
-      const avgWater = road.avg_water_cm ?? Math.round(maxWater * 0.7);
-      const severity = road.severity || (maxWater >= 50 ? 'CRITICAL' : maxWater >= 35 ? 'WARNING' : maxWater >= 20 ? 'ALERT' : 'SAFE');
-      const cfg = SEVERITY_CONFIG[severity] || SEVERITY_CONFIG.SAFE;
+      const maxWater = road.max_water_cm;
+      const avgWater = road.avg_water_cm;
+      const severity = road.severity || 'OFFLINE';
+      const cfg = SEVERITY_CONFIG[severity] || SEVERITY_CONFIG.OFFLINE;
       const color = cfg.color;
 
       if (road.coordinates && road.coordinates.length > 1) {
@@ -151,13 +151,13 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
                 <span style="color: #94a3b8;">Độ sâu cao nhất:</span>
                 <span style="font-weight: 800; font-family: 'Space Grotesk'; color: ${color}; font-size: 14px;">
-                  ↑ ${maxWater} cm
+                  ↑ ${maxWater == null ? 'Chưa có dữ liệu' : `${maxWater} cm`}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 12px;">
                 <span style="color: #94a3b8;">Mực nước trung bình:</span>
                 <span style="font-weight: 700; font-family: 'Space Grotesk'; color: #e2e8f0;">
-                  ${avgWater} cm
+                  ${avgWater == null ? 'Chưa có dữ liệu' : `${avgWater} cm`}
                 </span>
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="font-weight: 700; color: ${color}; margin-bottom: 3px;">
                 💡 Khuyến cáo lộ trình:
               </div>
-              ${road.avoid_advice || cfg.advisory}
+              ${severity === 'OFFLINE' ? 'Không có telemetry mới từ cảm biến.' : road.avoid_advice || cfg.advisory}
             </div>
           </div>
         `;
@@ -189,10 +189,10 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
     if (!showZones || !zones || zones.length === 0) return;
 
     zones.forEach(zone => {
-      const maxWater = zone.max_water_cm ?? zone.base_water ?? 50.0;
-      const avgWater = zone.avg_water_cm ?? Math.round(maxWater * 0.75);
-      const severity = zone.severity || (maxWater >= 50 ? 'CRITICAL' : maxWater >= 35 ? 'WARNING' : maxWater >= 20 ? 'ALERT' : 'SAFE');
-      const cfg = SEVERITY_CONFIG[severity] || SEVERITY_CONFIG.SAFE;
+      const maxWater = zone.max_water_cm;
+      const avgWater = zone.avg_water_cm;
+      const severity = zone.severity || 'OFFLINE';
+      const cfg = SEVERITY_CONFIG[severity] || SEVERITY_CONFIG.OFFLINE;
       const color = cfg.color;
 
       if (zone.polygon && zone.polygon.length > 2) {
@@ -235,13 +235,13 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px;">
                 <span style="color: #94a3b8;">Độ sâu rốn ngập:</span>
                 <span style="font-weight: 800; font-family: 'Space Grotesk'; color: ${color}; font-size: 14px;">
-                  ↑ ${maxWater} cm
+                  ↑ ${maxWater == null ? 'Chưa có dữ liệu' : `${maxWater} cm`}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 12px;">
                 <span style="color: #94a3b8;">Mực nước trung bình vùng:</span>
                 <span style="font-weight: 700; font-family: 'Space Grotesk'; color: #e2e8f0;">
-                  ${avgWater} cm
+                  ${avgWater == null ? 'Chưa có dữ liệu' : `${avgWater} cm`}
                 </span>
               </div>
             </div>
@@ -250,7 +250,7 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="font-weight: 700; color: ${color}; margin-bottom: 3px;">
                 ⚠️ Cảnh báo ngập diện rộng:
               </div>
-              ${zone.avoid_advice || cfg.advisory}
+              ${severity === 'OFFLINE' ? 'Không có telemetry mới từ cảm biến.' : zone.avoid_advice || cfg.advisory}
             </div>
           </div>
         `;
@@ -278,8 +278,8 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
         const lon = node.longitude ?? node.lon;
         if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
 
-        const water = node.water_level_cm ?? 0.0;
-        const status = node.status || (water >= 50 ? 'CRITICAL' : water >= 35 ? 'WARNING' : water >= 20 ? 'ALERT' : (water > 0 ? 'SAFE' : 'OFFLINE'));
+        const water = node.water_level_cm;
+        const status = node.status || 'OFFLINE';
         const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.OFFLINE;
         const color = cfg.color;
         const isOffline = status === 'OFFLINE';
@@ -307,12 +307,12 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; color: #94a3b8;">Mực nước đo được:</span>
                 <span style="font-size: 14px; font-weight: 800; font-family: 'Space Grotesk'; color: ${color};">
-                  ${water} cm
+                  ${water == null ? 'Chưa có dữ liệu' : `${water} cm`}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                 <span style="font-size: 11px; color: #94a3b8;">Trạng thái:</span>
-                <span style="font-size: 11px; font-weight: 700; color: ${color};">${status}</span>
+                <span style="font-size: 11px; font-weight: 700; color: ${color};">${status}${node.error ? `: ${node.error}` : ''}</span>
               </div>
             </div>
           </div>
@@ -330,8 +330,8 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
         const lon = node.longitude ?? node.lon;
         if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
 
-        const water = node.water_level_cm ?? 0.0;
-        const status = node.status || (water >= 50 ? 'CRITICAL' : water >= 35 ? 'WARNING' : water >= 20 ? 'ALERT' : (water > 0 ? 'SAFE' : 'OFFLINE'));
+        const water = node.water_level_cm;
+        const status = node.status || 'OFFLINE';
         const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.OFFLINE;
         const color = cfg.color;
         const isOffline = status === 'OFFLINE';
@@ -359,12 +359,12 @@ export default function FloodMap({ devices, severeLocations, selectedLocation, r
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; color: #94a3b8;">Mực nước đo được:</span>
                 <span style="font-size: 14px; font-weight: 800; font-family: 'Space Grotesk'; color: ${color};">
-                  ${water} cm
+                  ${water == null ? 'Chưa có dữ liệu' : `${water} cm`}
                 </span>
               </div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
                 <span style="font-size: 11px; color: #94a3b8;">Trạng thái:</span>
-                <span style="font-size: 11px; font-weight: 700; color: ${color};">${status}</span>
+                <span style="font-size: 11px; font-weight: 700; color: ${color};">${status}${node.error ? `: ${node.error}` : ''}</span>
               </div>
             </div>
           </div>

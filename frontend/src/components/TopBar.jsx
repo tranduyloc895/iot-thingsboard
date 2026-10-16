@@ -3,6 +3,7 @@ import { User, LayoutGrid } from 'lucide-react';
 
 // Mô tả mưa theo mm/h
 function getRainLabel(mm) {
+  if (mm == null) return { label: 'Chưa có dữ liệu mưa', color: '#94a3b8', icon: '🌧️' };
   if (mm >= 50) return { label: 'Mưa rất to', color: '#f43f5e', icon: '⛈️' };
   if (mm >= 25) return { label: 'Mưa to', color: '#fb923c', icon: '🌧️' };
   if (mm >= 10) return { label: 'Mưa vừa', color: '#facc15', icon: '🌦️' };
@@ -13,7 +14,8 @@ function getRainLabel(mm) {
 export default function TopBar({ 
   weather, 
   isPinging = false,
-  avgWater
+  avgWater,
+  weatherError
 }) {
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
@@ -30,10 +32,10 @@ export default function TopBar({
     return () => clearInterval(timer);
   }, []);
 
-  // Lấy dữ liệu thời tiết hoặc dùng fallback
-  const rain = weather?.rainfall_mm ?? 18.5;
-  const temp = weather?.temperature_c ?? 31.0;
-  const hum = weather?.humidity_percent ?? 80;
+  // Missing measurements remain unavailable.
+  const rain = weather?.rainfall_mm;
+  const temp = weather?.temperature_c;
+  const hum = weather?.humidity_percent;
   const { label: rainLabel, color: rainColor, icon: rainIcon } = getRainLabel(rain);
 
   const cardStyle = {
@@ -81,7 +83,7 @@ export default function TopBar({
             lineHeight: 1,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {avgWater != null ? `${Number(avgWater).toFixed(1)} cm` : '0.0 cm'}
+            {avgWater != null ? `${Number(avgWater).toFixed(1)} cm` : 'Chưa có dữ liệu'}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
             Nước ngập TB
@@ -89,6 +91,7 @@ export default function TopBar({
         </div>
       </div>
 
+      {weatherError && <div role="status" style={{ color: '#fbbf24', fontSize: '11px', maxWidth: '250px' }}>{weatherError}</div>}
       {/* ─── Divider ─── */}
       <span style={{ width: '1px', height: '22px', background: 'rgba(255,255,255,0.1)' }} />
 
@@ -104,7 +107,7 @@ export default function TopBar({
             lineHeight: 1,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {rain.toFixed(1)} mm/h
+            {rain == null ? '—' : `${rain.toFixed(1)} mm/h`}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>{rainLabel}</div>
         </div>
@@ -122,7 +125,7 @@ export default function TopBar({
             lineHeight: 1,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {temp.toFixed(1)}°C
+            {temp == null ? '—' : `${temp.toFixed(1)}°C`}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>Nhiệt độ</div>
         </div>
@@ -140,7 +143,7 @@ export default function TopBar({
             lineHeight: 1,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {hum.toFixed(0)}%
+            {hum == null ? '—' : `${hum.toFixed(0)}%`}
           </div>
           <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>Độ ẩm</div>
         </div>

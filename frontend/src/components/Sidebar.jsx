@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import TideChart from './TideChart';
-import { Droplets, AlertTriangle, ChevronRight, Activity, Flame, ChevronDown, ChevronUp, MapPin, Waves, Navigation, Zap, Radio, ShieldCheck } from 'lucide-react';
+import { Droplets, AlertTriangle, ChevronRight, Activity, Flame, ChevronDown, ChevronUp, MapPin, Zap } from 'lucide-react';
 
 const SEVERITY_COLORS = {
   SAFE: {
@@ -37,13 +37,14 @@ const SEVERITY_COLORS = {
 
 export default function Sidebar({ 
   tides = [], 
-  severeLocations = [], 
   roads = [], 
   zones = [], 
   summary, 
   weather, 
   isPinging = false,
-  wsStatus = 'CONNECTED',
+  wsStatus = 'CONNECTING',
+  errors = {},
+  connectionError,
   onSelectLocation 
 }) {
   const [selectedStationIdx, setSelectedStationIdx] = useState(0);
@@ -75,7 +76,7 @@ export default function Sidebar({
   const maxTide = tides.length > 0 ? Math.max(...tides.map(t => t.current_level)) : 0;
   const avgTide = tides.length > 0 
     ? (tides.reduce((acc, t) => acc + (t.current_level || 0), 0) / tides.length).toFixed(2) 
-    : '0.62';
+    : '—';
   const maxTideStation = tides.find(t => t.current_level === maxTide) || null;
   const cityTideAlert = maxTide >= 1.7
     ? { label: 'BĐ III + Xả lũ', color: '#ff0055', bg: 'rgba(255,0,85,0.18)' }
@@ -207,7 +208,7 @@ export default function Sidebar({
               textShadow: isPinging ? '0 0 8px rgba(56, 189, 248, 0.8)' : 'none',
               transition: 'text-shadow 0.2s ease'
             }}>
-              {summary?.avg_water_level_cm != null ? `${Number(summary.avg_water_level_cm).toFixed(1)}` : '0.0'}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>cm</span>
+              {summary?.avg_water_level_cm != null ? `${Number(summary.avg_water_level_cm).toFixed(1)}` : '—'}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>cm</span>
             </div>
           </div>
 
@@ -272,7 +273,7 @@ export default function Sidebar({
         }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <Activity size={10} color="#10b981" />
-            <span>Chu kỳ đẩy dữ liệu: <strong style={{ color: '#cbd5e1' }}>1.0s</strong></span>
+            <span>Kết nối realtime: <strong style={{ color: '#cbd5e1' }}>{wsStatus === 'CONNECTED' ? 'Đã nhận dữ liệu' : 'Đang chờ dữ liệu'}</strong></span>
           </span>
           <span style={{
             color: '#10b981',
@@ -289,11 +290,13 @@ export default function Sidebar({
               background: '#10b981',
               boxShadow: '0 0 6px #10b981'
             }} />
-            STREAMING
+            {wsStatus === 'CONNECTED' ? 'WS ĐÃ KẾT NỐI' : 'CHƯA KẾT NỐI'}
           </span>
         </div>
       </div>
 
+      {(connectionError || errors.telemetry) && <div role="alert" style={{ padding: '10px', marginBottom: '12px', color: '#fbbf24', border: '1px solid #fbbf2455', borderRadius: '10px', fontSize: '12px' }}>{connectionError || errors.telemetry}</div>}
+      {errors.weather && <div role="status" style={{ padding: '8px', color: '#fbbf24', fontSize: '11px' }}>{errors.weather}</div>}
       {/* Section: Dự báo Triều cường */}
       <div style={{ marginBottom: '16px', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -448,7 +451,7 @@ export default function Sidebar({
           )
         ) : (
           <div style={{ padding: '14px', textAlign: 'center', color: '#64748b', fontSize: '11px' }}>
-            Đang đồng bộ dữ liệu thủy văn...
+            {connectionError || errors.tides || 'Chưa có nguồn dữ liệu thủy văn.'}
           </div>
         )}
       </div>
@@ -459,7 +462,7 @@ export default function Sidebar({
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <MapPin size={14} color="#facc15" />
             <h2 style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.8px', color: '#cbd5e1', textTransform: 'uppercase' }}>
-              Điểm ngập cảnh báo ({allItems.length || 10})
+              Điểm ngập cảnh báo ({allItems.length})
             </h2>
           </div>
           <span style={{ fontSize: '10px', color: '#94a3b8' }}>
@@ -531,13 +534,12 @@ export default function Sidebar({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
           {displayedItems.map((item, idx) => {
             const isRoad = item.category === 'ROAD';
-            const severityKey = item.severity || 'SAFE';
-            const styleCfg = SEVERITY_COLORS[severityKey] || SEVERITY_COLORS.SAFE;
+            const severityKey = item.severity || 'OFFLINE';
+            const styleCfg = SEVERITY_COLORS[severityKey] || SEVERITY_COLORS.OFFLINE;
             const isSelected = idx === selectedStationIdx;
 
             const name = item.name;
             const district = item.district;
-            const maxWater = `${item.max_water_cm}cm`;
             const dimension = isRoad ? `${item.length_km} km` : `~${item.area_km2} km²`;
 
             return (
@@ -574,7 +576,7 @@ export default function Sidebar({
                         textShadow: isPinging ? `0 0 8px ${styleCfg.color}` : 'none',
                         transition: 'text-shadow 0.2s ease'
                       }}>
-                        Max: {item.max_water_cm}cm
+                        Max: {item.max_water_cm == null ? 'Chưa có dữ liệu' : `${item.max_water_cm}cm`}
                       </span>
                       <span style={{ color: '#64748b' }}>•</span>
                       <span style={{ 
@@ -584,7 +586,7 @@ export default function Sidebar({
                         fontSize: '11.5px',
                         fontVariantNumeric: 'tabular-nums'
                       }}>
-                        TB: {item.avg_water_cm != null ? `${item.avg_water_cm}cm` : `${Math.round((item.max_water_cm || 40) * 0.7)}cm`}
+                        TB: {item.avg_water_cm != null ? `${item.avg_water_cm}cm` : '—'}
                       </span>
                       <span style={{ color: '#64748b' }}>•</span>
                       <span style={{ color: '#94a3b8' }}>

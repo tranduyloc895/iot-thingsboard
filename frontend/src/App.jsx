@@ -2,259 +2,106 @@ import React, { useState, useEffect } from 'react';
 import FloodMap from './components/FloodMap';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
-import { ROADS_INITIAL, ZONES_INITIAL } from './data/floodData';
-
-// 10 TRẠM THỦY VĂN TƯƠNG ỨNG 6 TUYẾN ĐƯỜNG & 4 KHU VỰC TRỌNG ĐIỂM
-const TIDES_INITIAL = [
-  {
-    station_id: 'saigon_phan_huy_ich',
-    name: 'Phan Huy Ích (Kênh Hy Vọng - Gò Vấp)',
-    current_level: 1.58,
-    trend: 'UP',
-    status: 'CRITICAL',
-    peak_level: 1.65,
-    peak_hour: 10,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((0.95 + 0.62 * Math.sin((h - 4.5) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'tham_luong_nguyen_van_qua',
-    name: 'Nguyễn Văn Quá (Kênh Tham Lương - Q.12)',
-    current_level: 1.52,
-    trend: 'UP',
-    status: 'CRITICAL',
-    peak_level: 1.60,
-    peak_hour: 10,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((0.90 + 0.60 * Math.sin((h - 4.8) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'saigon_huynh_tan_phat',
-    name: 'Huỳnh Tấn Phát (Sông Sài Gòn - Q.7)',
-    current_level: 1.68,
-    trend: 'UP',
-    status: 'CRITICAL',
-    peak_level: 1.74,
-    peak_hour: 11,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((1.02 + 0.68 * Math.sin((h - 5) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'kenh_te_tran_xuan_soan',
-    name: 'Trần Xuân Soạn (Kênh Tẻ - Q.7)',
-    current_level: 1.62,
-    trend: 'UP',
-    status: 'CRITICAL',
-    peak_level: 1.68,
-    peak_hour: 11,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((0.98 + 0.64 * Math.sin((h - 4.8) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'van_thanh_nguyen_huu_canh',
-    name: 'Nguyễn Hữu Cảnh (Rạch Văn Thánh - Bình Thạnh)',
-    current_level: 1.45,
-    trend: 'UP',
-    status: 'HIGH',
-    peak_level: 1.50,
-    peak_hour: 11,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((0.88 + 0.55 * Math.sin((h - 5.2) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'saigon_ung_van_khiem',
-    name: 'Ung Văn Khiêm (Sông Sài Gòn - Bình Thạnh)',
-    current_level: 1.40,
-    trend: 'UP',
-    status: 'WARNING',
-    peak_level: 1.46,
-    peak_hour: 10,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((0.85 + 0.52 * Math.sin((h - 4.7) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'saigon_thao_dien',
-    name: 'Bán đảo Thảo Điền (Sông Sài Gòn - Thủ Đức)',
-    current_level: 1.65,
-    trend: 'UP',
-    status: 'CRITICAL',
-    peak_level: 1.70,
-    peak_hour: 10,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((1.0 + 0.65 * Math.sin((h - 4.5) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'rach_ngang_cho_thu_duc',
-    name: 'Chợ Thủ Đức (Lưu vực Rạch Cầu Ngang)',
-    current_level: 1.75,
-    trend: 'UP',
-    status: 'CRITICAL',
-    peak_level: 1.80,
-    peak_hour: 9,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((1.05 + 0.72 * Math.sin((h - 4) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'lang_hoa_cay_tram',
-    name: 'Cây Trâm - Làng Hoa (Lưu vực Gò Vấp)',
-    current_level: 1.48,
-    trend: 'UP',
-    status: 'HIGH',
-    peak_level: 1.54,
-    peak_hour: 10,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((0.92 + 0.56 * Math.sin((h - 4.6) * Math.PI / 6)).toFixed(2))
-    }))
-  },
-  {
-    station_id: 'kenh_doi_ben_me_coc',
-    name: 'Bến Mễ Cốc - Hồ Học Lãm (Kênh Đôi - Bình Tân)',
-    current_level: 1.56,
-    trend: 'UP',
-    status: 'CRITICAL',
-    peak_level: 1.62,
-    peak_hour: 11,
-    hourly_data: Array.from({ length: 25 }, (_, h) => ({
-      hour: h,
-      level: Number((0.96 + 0.60 * Math.sin((h - 5.0) * Math.PI / 6)).toFixed(2))
-    }))
-  }
-];
-
 const INITIAL_DATA = {
-  timestamp: new Date().toISOString(),
-  summary: {
-    safe_count: 0,
-    alert_count: 0,
-    critical_count: 0,
-    avg_water_level_cm: 0.0,
-    total_active_devices: 0
-  },
-  tides: TIDES_INITIAL,
-  severe_locations: [],
-  devices: [],
-  roads: ROADS_INITIAL || [],
-  zones: ZONES_INITIAL || [],
-  weather: null
+  timestamp: null, summary: null, tides: [], severe_locations: [],
+  devices: [], roads: [], zones: [], weather: null, errors: {}
 };
 
 export default function App() {
   const [data, setData] = useState(INITIAL_DATA);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [wsStatus, setWsStatus] = useState('CONNECTING'); // 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED'
-  const [lastSyncTime, setLastSyncTime] = useState(null);
-  const [packetCount, setPacketCount] = useState(0);
+  const [connectionError, setConnectionError] = useState('Đang kết nối backend...');
   const [isPinging, setIsPinging] = useState(false);
 
   useEffect(() => {
+    let ws = null;
+    let reconnectTimeout = null;
+    let pingTimeout = null;
+    let stopped = false;
+    let lastPacketAt = 0;
+    let receivedWS = false;
+    const controller = new AbortController();
     const host = window.location.hostname || 'localhost';
-    const isLocalDev = window.location.port === '5173' || window.location.port === '3000';
-    const wsUrl = isLocalDev 
-      ? `ws://${host}:8000/ws/live` 
-      : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/live`;
-
-    const fetchSnapshot = async () => {
-      try {
-        const apiUrl = isLocalDev 
-          ? `http://${host}:8000/api/v1/dashboard` 
-          : `${window.location.protocol}//${window.location.host}/api/v1/dashboard`;
-        const res = await fetch(apiUrl);
-        if (res.ok) {
-          const parsed = await res.json();
-          if (parsed && (parsed.devices || parsed.roads || parsed.zones || parsed.summary)) {
-            setData(prev => ({
-              ...prev,
-              ...parsed,
-              roads: parsed.roads && parsed.roads.length > 0 ? parsed.roads : prev.roads,
-              zones: parsed.zones && parsed.zones.length > 0 ? parsed.zones : prev.zones,
-              weather: parsed.weather ?? prev.weather,
-              summary: parsed.summary ?? prev.summary
-            }));
-            if (parsed.timestamp) setLastSyncTime(parsed.timestamp);
-          }
+    const local = ['5173', '3000'].includes(window.location.port);
+    const base = local ? `${window.location.protocol}//${host}:8000` : window.location.origin;
+    const wsUrl = `${base.replace(/^http/, 'ws')}/ws/live`;
+    const applySnapshot = (parsed) => {
+      if (!parsed || !Array.isArray(parsed.devices) || !parsed.summary) {
+        throw new Error('Payload backend không hợp lệ.');
+      }
+      if (stopped) return;
+      setData({ ...INITIAL_DATA, ...parsed });
+      lastPacketAt = Date.now();
+      setConnectionError(null);
+    };
+    fetch(`${base}/api/v1/dashboard`, { signal: controller.signal })
+      .then(res => {
+        if (!res.ok) throw new Error(`Backend HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(parsed => { if (!receivedWS) applySnapshot(parsed); })
+      .catch(error => {
+        if (!stopped && !receivedWS && error.name !== 'AbortError') {
+          setConnectionError('Không tải được dữ liệu backend. Đang thử kết nối realtime.');
         }
-      } catch (e) {
-        // Ignored
-      }
+      });
+    const reconnect = () => {
+      if (!stopped) reconnectTimeout = setTimeout(connect, 4000);
     };
-    fetchSnapshot();
-
-    const connectWS = () => {
+    const connect = () => {
+      if (stopped) return;
+      setWsStatus('CONNECTING');
       try {
-        setWsStatus('CONNECTING');
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-          setWsStatus('CONNECTED');
-        };
-
-        ws.onmessage = (event) => {
+        const socket = new WebSocket(wsUrl);
+        ws = socket;
+        socket.onopen = () => { if (!stopped) setWsStatus('WAITING'); };
+        socket.onmessage = event => {
+          if (stopped || ws !== socket) return;
           try {
-            const parsed = JSON.parse(event.data);
-            if (parsed && (parsed.devices || parsed.roads || parsed.zones || parsed.summary)) {
-              setData(prev => ({
-                ...prev,
-                ...parsed,
-                roads: parsed.roads && parsed.roads.length > 0 ? parsed.roads : prev.roads,
-                zones: parsed.zones && parsed.zones.length > 0 ? parsed.zones : prev.zones,
-                weather: parsed.weather ?? prev.weather,
-                summary: parsed.summary ?? prev.summary
-              }));
-
-              if (parsed.timestamp) {
-                setLastSyncTime(parsed.timestamp);
-              } else {
-                setLastSyncTime(new Date().toLocaleTimeString('vi-VN'));
-              }
-
-              setPacketCount(c => c + 1);
-              setIsPinging(true);
-              if (pingTimeout) clearTimeout(pingTimeout);
-              pingTimeout = setTimeout(() => setIsPinging(false), 500);
-            }
-          } catch (e) {
-            console.error('Failed to parse WS data:', e);
+            applySnapshot(JSON.parse(event.data));
+            receivedWS = true;
+            setWsStatus('CONNECTED');
+            setIsPinging(true);
+            clearTimeout(pingTimeout);
+            pingTimeout = setTimeout(() => setIsPinging(false), 500);
+          } catch {
+            setConnectionError('Dữ liệu realtime không hợp lệ.');
+            setWsStatus('ERROR');
           }
         };
-
-        ws.onerror = () => {
+        socket.onerror = () => socket.close();
+        socket.onclose = () => {
+          if (stopped || ws !== socket) return;
           setWsStatus('DISCONNECTED');
-          ws?.close();
+          setIsPinging(false);
+          setConnectionError('Mất kết nối realtime. Đang kết nối lại; dữ liệu cũ đã ẩn.');
+          setData(INITIAL_DATA);
+          reconnect();
         };
-
-        ws.onclose = () => {
-          setWsStatus('DISCONNECTED');
-          reconnectTimeout = setTimeout(connectWS, 4000);
-        };
-      } catch (e) {
+      } catch {
+        setConnectionError('Không mở được kết nối realtime.');
         setWsStatus('DISCONNECTED');
-        reconnectTimeout = setTimeout(connectWS, 4000);
+        reconnect();
       }
     };
-
-    connectWS();
-
+    connect();
+    const watchdog = setInterval(() => {
+      if (lastPacketAt && Date.now() - lastPacketAt > 20000) {
+        setConnectionError('Backend không cập nhật trong 20 giây. Đang kết nối lại.');
+        setData(INITIAL_DATA);
+        setWsStatus('DISCONNECTED');
+        lastPacketAt = 0;
+        ws?.close();
+      }
+    }, 2000);
     return () => {
-      if (ws) ws.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-      if (pingTimeout) clearTimeout(pingTimeout);
+      stopped = true;
+      controller.abort();
+      clearTimeout(reconnectTimeout);
+      clearTimeout(pingTimeout);
+      clearInterval(watchdog);
+      if (ws) { ws.onclose = null; ws.close(); }
     };
   }, []);
 
@@ -279,6 +126,8 @@ export default function App() {
         weather={data.weather}
         isPinging={isPinging}
         wsStatus={wsStatus}
+        errors={data.errors}
+        connectionError={connectionError}
         onSelectLocation={(loc) => setSelectedLocation(loc)}
       />
 
@@ -287,6 +136,7 @@ export default function App() {
         weather={data.weather} 
         isPinging={isPinging}
         avgWater={data.summary?.avg_water_level_cm}
+        weatherError={connectionError || data.errors?.weather}
       />
     </div>
   );

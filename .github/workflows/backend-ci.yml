@@ -39,6 +39,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Test telemetry and source failure handling
+        run: |
+          python3 -m pip install -r backend/requirements.txt
+          cd backend
+          python3 -m unittest discover -s tests -v
+
       - name: Name security artifact
         id: report-id
         run: echo "name=security-backend-${GITHUB_SHA:0:12}-${GITHUB_RUN_ID}-attempt${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"

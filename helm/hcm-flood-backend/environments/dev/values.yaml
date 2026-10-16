@@ -7,7 +7,7 @@ autoscaling:
 env:
   APP_ENV: development
   PORT: '8000'
-  THINGSBOARD_URL: http://thingsboard-node.iot-dev.svc.cluster.local:8080
+  THINGSBOARD_URL: http://thingsboard-node.flood-portal-dev.svc.cluster.local:8080
 envFrom:
 - secretRef:
     name: thingsboard-api-credentials
@@ -52,5 +52,5 @@ networkPolicy:
     namespaceSelector:
       kubernetes.io/metadata.name: ingress-nginx-dev
   thingsboard:
-    namespace: iot-dev
+    namespace: flood-portal-dev
 

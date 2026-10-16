@@ -31,7 +31,10 @@ async def health_check():
     return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
 
 async def build_dashboard_data() -> DashboardData:
-    devices = await tb_service.get_live_devices()
+    devices, telemetry_error = await tb_service.get_snapshot()
+    errors = {"tides": TideService.unavailable_reason}
+    if telemetry_error:
+        errors["telemetry"] = telemetry_error
     summary = tb_service.get_city_summary(devices)
     tides = await TideService.get_tide_data()
     severe = tb_service.get_severe_locations(devices)
@@ -39,6 +42,8 @@ async def build_dashboard_data() -> DashboardData:
     zones = tb_service.get_flood_zones(devices)
     weather_raw = await WeatherService.get_current_weather()
     weather = WeatherData(**weather_raw)
+    if weather.error:
+        errors["weather"] = weather.error
     
     return DashboardData(
         timestamp=datetime.now(VN_TZ).strftime("%Y-%m-%d %H:%M:%S"),
@@ -48,6 +53,7 @@ async def build_dashboard_data() -> DashboardData:
         devices=devices,
         roads=roads,
         zones=zones,
+        errors=errors,
         weather=weather
     )
 
