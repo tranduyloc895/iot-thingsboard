@@ -12,10 +12,10 @@ envFrom:
 - secretRef:
     name: thingsboard-api-credentials
 image:
-  digest: "sha256:1b64040c115a1efa5a55f216c1f30684b645fba5c1e610c05b1d29976aca6ff7"
+  digest: "sha256:6b1f819c4f2429d0e2232af722f74732c45273a21e3fc2bde7ca3bbc969c93ef"
   pullPolicy: IfNotPresent
   repository: ghcr.io/tranduyloc895/hcm-flood-backend
-  tag: "b3cf98e4ff244cb73646f1531657330408c6cf11"
+  tag: "f4de1cb8f77bbda5669aff9ca6fe47c3d9dbd02e"
 imagePullSecrets: []
 ingress:
   annotations:
