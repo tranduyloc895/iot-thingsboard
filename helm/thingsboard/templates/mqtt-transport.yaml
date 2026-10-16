@@ -59,7 +59,9 @@ spec:
             name: {{ .Values.mqtt.port.name }}
           env:
           - name: TB_SERVICE_ID
-            value: "tb-mqtt-transport"
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           - name: TB_QUEUE_TYPE
             value: "kafka"
           - name: MQTT_TIMEOUT
