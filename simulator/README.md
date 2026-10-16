@@ -11,11 +11,13 @@ Tại máy simulator, cập nhật source rồi chạy:
 ```bash
 cd simulator
 python3 generate_compose.py
-docker compose -f compose.fleet.yml build station-001
-docker compose -f compose.fleet.yml up -d --no-build
+docker-compose build station-001
+docker-compose up -d --no-build
 ```
 
 Từ subnet simulator (10.0.1.0/24), endpoint MQTT là firewall `10.0.1.200:1883`, NAT tới ILB `10.0.0.225:1883`. Không gọi thẳng ILB từ untrust subnet. Kết nối nc tới firewall chỉ kiểm tra TCP; xác nhận thêm MQTT CONNACK/PUBACK và timestamp telemetry trong ThingsBoard.
+
+`docker-compose.yml` mặc định là fleet 50 trạm; `compose.fleet.yml` là bản tương đương. Với Compose plugin mới, thay `docker-compose` bằng `docker compose`. Để chạy riêng một trạm, dùng `compose.single.yml` và đặt NODE_INDEX.
 
 Cung cấp THINGSBOARD_HOST/PORT và provisioning credentials của profile từ nguồn quản lý credentials. Không commit credentials. Các device tên ngẫu nhiên cũ không bị xóa tự động. Backend phân trang toàn bộ device và chọn telemetry mới nhất theo station; thiết bị không ánh xạ được không bị gán tùy tiện theo thứ tự.
 
