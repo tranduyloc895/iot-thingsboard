@@ -1,0 +1,71 @@
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+    "name": "hcm-flood-backend-dev",
+    "namespace": "argocd"
+  },
+  "spec": {
+    "destination": {
+      "namespace": "flood-portal-dev",
+      "server": "https://kubernetes.default.svc"
+    },
+    "project": "default",
+    "source": {
+      "helm": {
+        "releaseName": "hcm-flood-backend",
+        "valueFiles": [
+          "environments/dev/values.yaml"
+        ]
+      },
+      "path": "helm/hcm-flood-backend",
+      "repoURL": "https://github.com/tranduyloc895/iot-thingsboard.git",
+      "targetRevision": "main"
+    },
+    "syncPolicy": {
+      "automated": {
+        "prune": true,
+        "selfHeal": true
+      },
+      "syncOptions": [
+        "CreateNamespace=true"
+      ]
+    }
+  }
+}
+---
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+    "name": "hcm-flood-backend",
+    "namespace": "argocd"
+  },
+  "spec": {
+    "destination": {
+      "namespace": "flood-portal",
+      "server": "https://kubernetes.default.svc"
+    },
+    "project": "default",
+    "source": {
+      "helm": {
+        "releaseName": "hcm-flood-backend",
+        "valueFiles": [
+          "environments/prod/values.yaml"
+        ]
+      },
+      "path": "helm/hcm-flood-backend",
+      "repoURL": "https://github.com/tranduyloc895/iot-thingsboard.git",
+      "targetRevision": "main"
+    },
+    "syncPolicy": {
+      "automated": {
+        "prune": true,
+        "selfHeal": true
+      },
+      "syncOptions": [
+        "CreateNamespace=true"
+      ]
+    }
+  }
+}
