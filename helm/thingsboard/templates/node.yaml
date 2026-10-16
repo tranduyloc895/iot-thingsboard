@@ -62,7 +62,9 @@ spec:
             name: mqtt
           env:
           - name: TB_SERVICE_ID
-            value: "tb-node"
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           - name: TB_SERVICE_TYPE
             value: "monolith"
           - name: TB_QUEUE_TYPE

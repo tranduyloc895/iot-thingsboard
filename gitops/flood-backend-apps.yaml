@@ -1,0 +1,111 @@
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+    "name": "hcm-flood-backend-dev",
+    "namespace": "argocd",
+    "annotations": {
+      "argocd.argoproj.io/refresh": "hard"
+    }
+  },
+  "spec": {
+    "destination": {
+      "namespace": "flood-portal-dev",
+      "server": "https://kubernetes.default.svc"
+    },
+    "project": "default",
+    "source": {
+      "helm": {
+        "releaseName": "hcm-flood-backend",
+        "valueFiles": [
+          "environments/dev/values.yaml"
+        ],
+        "valuesObject": {
+          "env": {
+            "THINGSBOARD_URL": "http://thingsboard-node.flood-portal-dev.svc.cluster.local:8080"
+          },
+          "envFrom": [
+            {
+              "secretRef": {
+                "name": "thingsboard-api-credentials"
+              }
+            }
+          ],
+          "networkPolicy": {
+            "thingsboard": {
+              "namespace": "flood-portal-dev"
+            }
+          }
+        }
+      },
+      "path": "helm/hcm-flood-backend",
+      "repoURL": "https://github.com/tranduyloc895/iot-thingsboard.git",
+      "targetRevision": "main"
+    },
+    "syncPolicy": {
+      "automated": {
+        "prune": true,
+        "selfHeal": true
+      },
+      "syncOptions": [
+        "CreateNamespace=true"
+      ]
+    }
+  }
+}
+---
+{
+  "apiVersion": "argoproj.io/v1alpha1",
+  "kind": "Application",
+  "metadata": {
+    "name": "hcm-flood-backend",
+    "namespace": "argocd",
+    "annotations": {
+      "argocd.argoproj.io/refresh": "hard"
+    }
+  },
+  "spec": {
+    "destination": {
+      "namespace": "flood-portal",
+      "server": "https://kubernetes.default.svc"
+    },
+    "project": "default",
+    "source": {
+      "helm": {
+        "releaseName": "hcm-flood-backend",
+        "valueFiles": [
+          "environments/prod/values.yaml"
+        ],
+        "valuesObject": {
+          "env": {
+            "THINGSBOARD_URL": "http://iot-thingsboard-node.thingsboard.svc.cluster.local:8080"
+          },
+          "envFrom": [
+            {
+              "secretRef": {
+                "name": "thingsboard-api-credentials"
+              }
+            }
+          ],
+          "networkPolicy": {
+            "thingsboard": {
+              "namespace": "thingsboard"
+            }
+          }
+        }
+      },
+      "path": "helm/hcm-flood-backend",
+      "repoURL": "https://github.com/tranduyloc895/iot-thingsboard.git",
+      "targetRevision": "main"
+    },
+    "syncPolicy": {
+      "automated": {
+        "prune": true,
+        "selfHeal": true
+      },
+      "syncOptions": [
+        "CreateNamespace=true"
+      ]
+    }
+  }
+}

@@ -3,6 +3,7 @@ import json
 import random
 import os
 import threading
+import secrets
 from pathlib import Path
 import paho.mqtt.client as mqtt
 
@@ -915,7 +916,7 @@ ALL_50_STATIONS = [
 # ==========================================
 # CẤU HÌNH BIẾN MÔI TRƯỜNG & KẾT NỐI
 # ==========================================
-THINGSBOARD_HOST = os.getenv("THINGSBOARD_HOST", "10.0.0.225")
+THINGSBOARD_HOST = os.getenv("THINGSBOARD_HOST", "10.0.1.200")
 PORT = int(os.getenv("PORT", "1883"))
 PROVISION_KEY = os.getenv("PROVISION_KEY", "")
 PROVISION_SECRET = os.getenv("PROVISION_SECRET", "")
@@ -955,6 +956,10 @@ def save_token(token):
 
 
 def provision_device():
+    # Persist a client-chosen token before the one-shot request. If the response
+    # is lost after device creation, the next attempt can authenticate with it.
+    requested_token = secrets.token_urlsafe(32)
+    save_token(requested_token)
     client = mqtt.Client()
     client.username_pw_set("provision")
     completed = threading.Event()
@@ -965,12 +970,13 @@ def provision_device():
             print(f"[{DEVICE_NAME}] MQTT provisioning bị từ chối rc={rc}", flush=True)
             completed.set()
         else:
+            # ThingsBoard provision-only sessions can ignore SUBSCRIBE/SUBACK.
+            # Queue subscribe before publish, but never wait for on_subscribe.
             client.subscribe("/provision/response", qos=1)
-
-    def on_subscribe(client, userdata, mid, granted_qos):
-        client.publish("/provision/request", json.dumps({
-            "deviceName": DEVICE_NAME, "provisionDeviceKey": PROVISION_KEY,
-            "provisionDeviceSecret": PROVISION_SECRET}), qos=1)
+            client.publish("/provision/request", json.dumps({
+                "deviceName": DEVICE_NAME, "provisionDeviceKey": PROVISION_KEY,
+                "provisionDeviceSecret": PROVISION_SECRET,
+                "credentialsType": "ACCESS_TOKEN", "token": requested_token}), qos=1)
 
     def on_message(client, userdata, message):
         try:
@@ -984,7 +990,6 @@ def provision_device():
         completed.set()
 
     client.on_connect = on_connect
-    client.on_subscribe = on_subscribe
     client.on_message = on_message
     try:
         client.connect(THINGSBOARD_HOST, PORT, 60)
