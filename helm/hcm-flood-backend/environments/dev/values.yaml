@@ -19,11 +19,11 @@ image:
 imagePullSecrets: []
 ingress:
   annotations:
-    kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: nginx-dev
     nginx.ingress.kubernetes.io/proxy-read-timeout: '3600'
     nginx.ingress.kubernetes.io/proxy-send-timeout: '3600'
     nginx.ingress.kubernetes.io/websocket-services: hcm-flood-backend
-  className: nginx
+  className: nginx-dev
   enabled: true
   hosts:
   - host: flood.dev.web-ui.com
@@ -48,6 +48,9 @@ service:
 
 networkPolicy:
   enabled: true
+  ingressController:
+    namespaceSelector:
+      kubernetes.io/metadata.name: ingress-nginx-dev
   thingsboard:
     namespace: iot-dev
 

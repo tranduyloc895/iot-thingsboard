@@ -12,8 +12,8 @@ image:
 imagePullSecrets: []
 ingress:
   annotations:
-    kubernetes.io/ingress.class: nginx
-  className: nginx
+    kubernetes.io/ingress.class: nginx-dev
+  className: nginx-dev
   enabled: true
   hosts:
   - host: flood.dev.web-ui.com
@@ -36,4 +36,7 @@ service:
 
 networkPolicy:
   enabled: true
+  ingressController:
+    namespaceSelector:
+      kubernetes.io/metadata.name: ingress-nginx-dev
 
