@@ -7,7 +7,7 @@ function getRainLabel(mm) {
   if (mm >= 50) return { label: 'Mưa rất to', color: '#f43f5e', icon: '⛈️' };
   if (mm >= 25) return { label: 'Mưa to', color: '#fb923c', icon: '🌧️' };
   if (mm >= 10) return { label: 'Mưa vừa', color: '#facc15', icon: '🌦️' };
-  if (mm >= 2) return { label: 'Mưa nhỏ', color: '#4ade80', icon: '🌂' };
+  if (mm > 0) return { label: 'Có mưa', color: '#4ade80', icon: '🌂' };
   return { label: 'Không mưa', color: '#94a3b8', icon: '🌤️' };
 }
 
@@ -36,7 +36,10 @@ export default function TopBar({
   const rain = weather?.rainfall_mm;
   const temp = weather?.temperature_c;
   const hum = weather?.humidity_percent;
-  const { label: rainLabel, color: rainColor, icon: rainIcon } = getRainLabel(rain);
+  const period = weather?.rain_period_minutes;
+  const { label: rainLabel, color: rainColor, icon: rainIcon } = getRainLabel(
+    rain == null || !period ? null : rain * 60 / period);
+  const weatherTitle = `${weather?.source ?? ''} · ${weather?.updated_at ?? ''}`;
 
   const cardStyle = {
     display: 'flex',
@@ -92,11 +95,17 @@ export default function TopBar({
       </div>
 
       {weatherError && <div role="status" style={{ color: '#fbbf24', fontSize: '11px', maxWidth: '250px' }}>{weatherError}</div>}
+      {weather?.source_url && <div style={{ fontSize: '9px', color: '#94a3b8', maxWidth: '150px' }} title={weatherTitle}>
+        <a href={weather.source_url} target="_blank" rel="noreferrer" style={{ color: '#38bdf8' }}>{weather.source}</a>
+        {' · '}<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" style={{ color: '#94a3b8' }}>CC BY 4.0</a>
+        <div>{weather.is_forecast ? 'Dự báo thời tiết' : 'Thời tiết theo mô hình'}</div>
+        {weather.notice && <div role="status" style={{ color: '#fbbf24' }}>{weather.notice} · Đang dùng nguồn dự phòng</div>}
+      </div>}
       {/* ─── Divider ─── */}
       <span style={{ width: '1px', height: '22px', background: 'rgba(255,255,255,0.1)' }} />
 
       {/* ─── 🌧 Lượng mưa ─── */}
-      <div style={{ ...cardStyle, border: `1px solid ${rainColor}30` }}>
+      <div title={weatherTitle} style={{ ...cardStyle, border: `1px solid ${rainColor}30` }}>
         <span style={{ fontSize: '14px' }}>{rainIcon}</span>
         <div>
           <div style={{ 
@@ -107,9 +116,9 @@ export default function TopBar({
             lineHeight: 1,
             fontVariantNumeric: 'tabular-nums'
           }}>
-            {rain == null ? '—' : `${rain.toFixed(1)} mm/h`}
+            {rain == null ? '—' : `${rain.toFixed(1)} mm/${period ?? '?'} phút`}
           </div>
-          <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>{rainLabel}</div>
+          <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>{weather?.is_forecast ? 'Mưa dự báo 1 giờ tới' : rainLabel}</div>
         </div>
       </div>
 

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     
     # External APIs
     OPEN_METEO_WEATHER_URL: str = "https://api.open-meteo.com/v1/forecast"
+    MET_NORWAY_WEATHER_URL: str = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
     OPEN_METEO_MARINE_URL: str = "https://marine-api.open-meteo.com/v1/marine"
 
     class Config:

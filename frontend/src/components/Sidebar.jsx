@@ -88,6 +88,8 @@ export default function Sidebar({
           ? { label: 'Báo động I', color: '#facc15', bg: 'rgba(250,204,21,0.13)' }
           : { label: 'Bình thường', color: '#10b981', bg: 'rgba(16,185,129,0.12)' };
   const rainfall_mm = weather?.rainfall_mm ?? null;
+  const rainfallRate = rainfall_mm != null && weather?.rain_period_minutes
+    ? rainfall_mm * 60 / weather.rain_period_minutes : null;
 
   return (
     <aside style={{
@@ -382,14 +384,14 @@ export default function Sidebar({
             {rainfall_mm != null && (
               <div style={{ gridColumn: '1 / -1', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px', marginTop: '2px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600 }}>🌧️ Lượng mưa hiện tại</span>
+                  <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600 }}>🌧️ {weather?.is_forecast ? 'Mưa dự báo 1 giờ tới' : 'Lượng mưa theo mô hình'}</span>
                   <span style={{
                     fontSize: '10px', fontWeight: 700,
-                    color: rainfall_mm >= 25 ? '#fb923c' : rainfall_mm >= 10 ? '#facc15' : '#10b981'
+                    color: rainfallRate >= 25 ? '#fb923c' : rainfallRate >= 10 ? '#facc15' : '#10b981'
                   }}>
-                    {rainfall_mm.toFixed(1)} mm/h
-                    {rainfall_mm >= 25 && <span style={{ marginLeft: '4px', fontSize: '9px', color: '#fb923c' }}>(Mưa to → Nguy cơ ngập cao)</span>}
-                    {rainfall_mm >= 10 && rainfall_mm < 25 && <span style={{ marginLeft: '4px', fontSize: '9px', color: '#facc15' }}>(Mưa vừa)</span>}
+                    {rainfall_mm.toFixed(1)} mm/{weather?.rain_period_minutes ?? '?'} phút
+                    {rainfallRate >= 25 && <span style={{ marginLeft: '4px', fontSize: '9px', color: '#fb923c' }}>(Mưa to → Nguy cơ ngập cao)</span>}
+                    {rainfallRate >= 10 && rainfallRate < 25 && <span style={{ marginLeft: '4px', fontSize: '9px', color: '#facc15' }}>(Mưa vừa)</span>}
                   </span>
                 </div>
               </div>
@@ -443,11 +445,11 @@ export default function Sidebar({
           showAllCharts ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '320px', overflowY: 'auto' }}>
               {tides.map((station) => (
-                <TideChart key={station.station_id} station={station} rainfall_mm={rainfall_mm} />
+                <TideChart key={station.station_id} station={station} rainfall_mm={rainfallRate} />
               ))}
             </div>
           ) : (
-            activeStation && <TideChart station={activeStation} rainfall_mm={rainfall_mm} />
+            activeStation && <TideChart station={activeStation} rainfall_mm={rainfallRate} />
           )
         ) : (
           <div style={{ padding: '14px', textAlign: 'center', color: '#64748b', fontSize: '11px' }}>
