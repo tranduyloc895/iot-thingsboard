@@ -43,6 +43,18 @@ kubectl --context "$CMC_CONTEXT" -n cmc-monitoring create secret generic discord
 File chỉ chứa URL, không thêm dấu nháy. Giới hạn quyền đọc và loại bỏ file tạm
 sau khi nạp vào secret manager. Đây là lệnh mẫu, chưa được chạy tự động.
 
+### Kênh cảnh báo ngập lụt IoT ThingsBoard (`#flood-alerts`)
+
+Kênh nhận cảnh báo mức nước khẩn cấp (CRITICAL $\ge 50$cm) từ ThingsBoard Rule Engine.
+Cấu hình thông qua Rule Chain JSON trong [rule-chains/tb_flood_discord_alarm_rule_chain.json](file:///d:/workspace/projects/iot-thingsboard/thingsboard-ce-k8s/rule-chains/tb_flood_discord_alarm_rule_chain.json)
+hoặc node REST API Call trong Root Rule Chain.
+
+Kiểm tra kênh bằng script:
+```sh
+python tools/test_flood_discord_alert.py --status critical --water-level 62.4
+```
+
+
 ## Luồng metrics → Alertmanager → Discord
 
 Repo có Prometheus CMC ở `prometheus-server.cmc-monitoring:80` nhưng chưa có
