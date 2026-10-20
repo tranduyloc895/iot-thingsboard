@@ -68,28 +68,40 @@ export default function TopBar({
     }}>
 
       {/* ─── 🌊 Mực nước ngập trung bình toàn thành phố ─── */}
-      <div style={{
-        ...cardStyle,
-        border: isPinging ? '1px solid rgba(56, 189, 248, 0.4)' : cardStyle.border,
-        transition: 'border-color 0.25s ease'
-      }}>
-        <span style={{ fontSize: '13px' }}>🌊</span>
-        <div>
-          <div style={{ 
-            fontSize: '11px', 
-            fontWeight: 800, 
-            color: '#38bdf8', 
-            fontFamily: 'Space Grotesk', 
-            lineHeight: 1,
-            fontVariantNumeric: 'tabular-nums'
+      {(() => {
+        const avgColor = avgWater == null ? '#38bdf8' 
+          : avgWater >= 50 ? '#ff0055' 
+          : avgWater >= 35 ? '#ff7b00' 
+          : avgWater >= 20 ? '#facc15' 
+          : '#38bdf8';
+        return (
+          <div style={{
+            ...cardStyle,
+            border: isPinging ? `1px solid ${avgColor}80` : `1px solid ${avgColor}30`,
+            background: isPinging ? `${avgColor}12` : cardStyle.background,
+            transition: 'all 0.25s ease'
           }}>
-            {avgWater != null ? `${Number(avgWater).toFixed(1)} cm` : 'Chưa có dữ liệu'}
+            <span style={{ fontSize: '13px' }}>🌊</span>
+            <div>
+              <div style={{ 
+                fontSize: '11px', 
+                fontWeight: 800, 
+                color: avgColor, 
+                fontFamily: 'Space Grotesk', 
+                lineHeight: 1,
+                fontVariantNumeric: 'tabular-nums',
+                textShadow: isPinging ? `0 0 8px ${avgColor}` : 'none',
+                transition: 'all 0.25s ease'
+              }}>
+                {avgWater != null ? `${Number(avgWater).toFixed(1)} cm` : 'Chưa có dữ liệu'}
+              </div>
+              <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
+                Nước ngập TB
+              </div>
+            </div>
           </div>
-          <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600, marginTop: '1px' }}>
-            Nước ngập TB
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {weatherError && <div role="status" style={{ color: '#fbbf24', fontSize: '11px', maxWidth: '250px' }}>{weatherError}</div>}
       {/* ─── Divider ─── */}

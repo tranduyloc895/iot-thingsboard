@@ -189,30 +189,41 @@ export default function Sidebar({
         {/* 3 Metrics Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '8px' }}>
           {/* Mực nước TB toàn thành phố */}
-          <div style={{
-            padding: '7px 6px',
-            borderRadius: '10px',
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '8.5px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>
-              Nước TB
-            </div>
-            <div style={{
-              fontSize: '14.5px',
-              fontWeight: 800,
-              fontFamily: 'Space Grotesk',
-              color: '#38bdf8',
-              lineHeight: 1.2,
-              marginTop: '2px',
-              fontVariantNumeric: 'tabular-nums',
-              textShadow: isPinging ? '0 0 8px rgba(56, 189, 248, 0.8)' : 'none',
-              transition: 'text-shadow 0.2s ease'
-            }}>
-              {summary?.avg_water_level_cm != null ? `${Number(summary.avg_water_level_cm).toFixed(1)}` : '—'}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>cm</span>
-            </div>
-          </div>
+          {(() => {
+            const avgVal = summary?.avg_water_level_cm;
+            const avgColor = avgVal == null ? '#38bdf8' 
+              : avgVal >= 50 ? '#ff0055' 
+              : avgVal >= 35 ? '#ff7b00' 
+              : avgVal >= 20 ? '#facc15' 
+              : '#38bdf8';
+            return (
+              <div style={{
+                padding: '7px 6px',
+                borderRadius: '10px',
+                background: isPinging ? `${avgColor}14` : 'rgba(255, 255, 255, 0.03)',
+                border: isPinging ? `1px solid ${avgColor}60` : '1px solid rgba(255, 255, 255, 0.06)',
+                textAlign: 'center',
+                transition: 'all 0.25s ease'
+              }}>
+                <div style={{ fontSize: '8.5px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>
+                  Nước TB
+                </div>
+                <div style={{
+                  fontSize: '14.5px',
+                  fontWeight: 800,
+                  fontFamily: 'Space Grotesk',
+                  color: avgColor,
+                  lineHeight: 1.2,
+                  marginTop: '2px',
+                  fontVariantNumeric: 'tabular-nums',
+                  textShadow: isPinging ? `0 0 8px ${avgColor}` : 'none',
+                  transition: 'all 0.2s ease'
+                }}>
+                  {avgVal != null ? `${Number(avgVal).toFixed(1)}` : '—'}<span style={{ fontSize: '10px', fontWeight: 600, marginLeft: '1px' }}>cm</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Nguy cấp (>50cm) */}
           <div style={{
