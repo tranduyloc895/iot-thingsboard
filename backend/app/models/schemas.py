@@ -8,6 +8,10 @@ class WeatherData(BaseModel):
     source: str = "Open-Meteo Live API"
     error: Optional[str] = None
     updated_at: Optional[str] = None
+    source_url: Optional[str] = None
+    notice: Optional[str] = None
+    is_forecast: bool = False
+    rain_period_minutes: Optional[int] = None
 
 class DeviceTelemetry(BaseModel):
     device_id: str
