@@ -36,7 +36,10 @@ export default function TopBar({
   const rain = weather?.rainfall_mm;
   const temp = weather?.temperature_c;
   const hum = weather?.humidity_percent;
-  const { label: rainLabel, color: rainColor, icon: rainIcon } = getRainLabel(rain);
+  const period = weather?.rain_period_minutes;
+  const { label: rainLabel, color: rainColor, icon: rainIcon } = getRainLabel(
+    rain == null || !period ? null : rain * 60 / period);
+  const weatherTitle = `${weather?.source ?? ''} · ${weather?.updated_at ?? ''}`;
 
   const cardStyle = {
     display: 'flex',
