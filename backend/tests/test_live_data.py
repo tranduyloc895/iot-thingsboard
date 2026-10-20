@@ -105,9 +105,10 @@ class TelemetryTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('tài khoản', error)
         self.assertIsNone(devices[0].water_level_cm)
 
-    async def test_tides_have_no_generated_curve(self):
-        self.assertEqual(await TideService.get_tide_data(), [])
-        self.assertTrue(TideService.unavailable_reason)
+    async def test_tides_have_full_hcm_stations(self):
+        tides = await TideService.get_tide_data()
+        self.assertEqual(len(tides), 10)
+        self.assertIsNone(TideService.unavailable_reason)
 
     async def test_weather_failure_has_no_baseline(self):
         WeatherService._cached = None

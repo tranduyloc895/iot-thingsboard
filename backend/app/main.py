@@ -32,7 +32,9 @@ async def health_check():
 
 async def build_dashboard_data() -> DashboardData:
     devices, telemetry_error = await tb_service.get_snapshot()
-    errors = {"tides": TideService.unavailable_reason}
+    errors = {}
+    if TideService.unavailable_reason:
+        errors["tides"] = TideService.unavailable_reason
     if telemetry_error:
         errors["telemetry"] = telemetry_error
     summary = tb_service.get_city_summary(devices)
