@@ -1,0 +1,23 @@
+# Explicit opt-in for a manual Helm upgrade; NOT referenced by CI/CD.
+# Merge AFTER a protected snapshot of the installed release's values.
+# Preserve the live kafka.replicaCount on EVERY upgrade; see the runbook.
+mqtt:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+node:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+kafkaAutoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+# No image, storage, JVM, replication-factor or partition-count changes here.
+# Existing emptyDir storage remains ephemeral: this is a scaling demo,
+# not a Kafka HA/storage migration.

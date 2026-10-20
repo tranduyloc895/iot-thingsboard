@@ -432,6 +432,14 @@ redis:
     persistence:
       enabled: false
 
+# Parent-chart HPA for the vendored Kafka chart. Never automatically scale down.
+# Existing Kafka partitions are NOT automatically moved to added brokers.
+kafkaAutoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
 kafka:
   enabled: true
   image:
