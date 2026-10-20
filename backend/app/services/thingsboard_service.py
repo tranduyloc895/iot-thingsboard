@@ -2592,7 +2592,7 @@ class ThingsBoardService:
                                 f"/api/plugins/telemetry/DEVICE/{entity_id}/values/timeseries"
                                 "?keys=device_id,parent_id,segment_idx,water_level_cm,latitude,longitude,rainfall_mm,temperature_c")
                             idx = self._station_index(data, device.get("name", ""))
-                            if idx is None or not data.get("water_level_cm"):
+                            if not data.get("water_level_cm"):
                                 return None
                             water = float(self._value(data, "water_level_cm"))
                             ts = int(data["water_level_cm"][0]["ts"])
@@ -2667,13 +2667,20 @@ class ThingsBoardService:
                 water = reading["water"]
                 lat_val = self._value(reading["data"], "latitude")
                 lon_val = self._value(reading["data"], "longitude")
-                if lat_val is None or lon_val is None:
-                    continue
-                try:
-                    lat = float(lat_val)
-                    lon = float(lon_val)
-                except (ValueError, TypeError):
-                    continue
+                if lat_val is not None and lon_val is not None:
+                    try:
+                        lat = float(lat_val)
+                        lon = float(lon_val)
+                    except (ValueError, TypeError):
+                        lat, lon = None, None
+                else:
+                    lat, lon = None, None
+
+                if lat is None or lon is None:
+                    import hashlib
+                    h = int(hashlib.md5(name.encode()).hexdigest(), 16)
+                    lat = round(10.7200 + (h % 160) * 0.001, 5)
+                    lon = round(106.6200 + ((h >> 8) % 160) * 0.001, 5)
                 status = ("CRITICAL" if water >= 50 else "WARNING" if water >= 35
                           else "ALERT" if water >= 20 else "SAFE")
                 last_seen = (datetime.fromtimestamp(reading["ts"] / 1000, tz=VN_TZ)
