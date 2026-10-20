@@ -54,6 +54,10 @@ externalDatabase:
 externalRedis:
   enabled: true
   existingSecret: thingsboard-redis
+telemetryRetention:
+  enabled: true
+  ttlSeconds: 86400
+  cleanupIntervalMs: 300000
 networkPolicy:
   enabled: true
   portalNamespace: flood-portal
@@ -182,7 +186,11 @@ kafka:
   nodeSelector:
     nodegroup: workload
   persistence:
-    enabled: false
+    enabled: true
+    storageClass: "highio"
+    accessModes:
+      - ReadWriteOnce
+    size: 10Gi
   resources:
     limits:
       cpu: 1000m
@@ -198,7 +206,11 @@ kafka:
     nodeSelector:
       nodegroup: workload
     persistence:
-      enabled: false
+      enabled: true
+      storageClass: "highio"
+      accessModes:
+        - ReadWriteOnce
+      size: 5Gi
     resources:
       limits:
         cpu: 500m

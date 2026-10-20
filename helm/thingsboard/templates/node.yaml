@@ -87,6 +87,15 @@ spec:
             value: "false"
           - name: CACHE_TYPE
             value: "redis"
+          {{- $retention := .Values.telemetryRetention | default dict }}
+          {{- if $retention.enabled }}
+          - name: SQL_TTL_TS_ENABLED
+            value: "true"
+          - name: SQL_TTL_TS_TS_KEY_VALUE_TTL
+            value: {{ $retention.ttlSeconds | quote }}
+          - name: SQL_TTL_TS_EXECUTION_INTERVAL
+            value: {{ $retention.cleanupIntervalMs | quote }}
+          {{- end }}
           {{- if not .Values.externalRedis.enabled }}
           - name: REDIS_HOST
             value: "{{ .Values.redis.fullnameOverride | default (printf "%s-redis-master" .Release.Name) }}"

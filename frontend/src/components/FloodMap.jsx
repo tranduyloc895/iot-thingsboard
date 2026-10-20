@@ -52,7 +52,7 @@ const HCMC_BOUNDS = [
   [11.1500, 107.0500]  // Đông Bắc TP.HCM (Củ Chi / Bình Dương / Đồng Nai)
 ];
 
-export default function FloodMap({ selectedLocation, roads = [], zones = [] }) {
+export default function FloodMap({ selectedLocation, roads = [], zones = [], devices = [] }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const roadsLayerRef = useRef(null);
@@ -271,9 +271,13 @@ export default function FloodMap({ selectedLocation, roads = [], zones = [] }) {
 
     if (!showSensors) return;
 
+    const renderedNodeIds = new Set();
+
     // Vẽ trạm thuộc Tuyến đường
     roads?.forEach(road => {
       road.nodes?.forEach((node, nodeIdx) => {
+        renderedNodeIds.add(node.id);
+        renderedNodeIds.add(node.name);
         const lat = node.latitude ?? node.lat;
         const lon = node.longitude ?? node.lon;
         if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
@@ -326,6 +330,8 @@ export default function FloodMap({ selectedLocation, roads = [], zones = [] }) {
     // Vẽ trạm thuộc Khu vực ngập
     zones?.forEach(zone => {
       zone.nodes?.forEach((node, nodeIdx) => {
+        renderedNodeIds.add(node.id);
+        renderedNodeIds.add(node.name);
         const lat = node.latitude ?? node.lat;
         const lon = node.longitude ?? node.lon;
         if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
@@ -374,7 +380,58 @@ export default function FloodMap({ selectedLocation, roads = [], zones = [] }) {
         nodesLayerRef.current.addLayer(marker);
       });
     });
-  }, [roads, zones, showSensors]);
+
+    // Vẽ các trạm quan trắc mở rộng / di động (ví dụ DEMO-SURGE-001..150)
+    devices?.forEach(dev => {
+      if (renderedNodeIds.has(dev.device_id) || renderedNodeIds.has(dev.name)) return;
+      const lat = dev.latitude ?? dev.lat;
+      const lon = dev.longitude ?? dev.lon;
+      if (lat == null || lon == null || isNaN(lat) || isNaN(lon)) return;
+
+      const water = dev.water_level_cm;
+      const status = dev.status || 'OFFLINE';
+      const cfg = SEVERITY_CONFIG[status] || SEVERITY_CONFIG.OFFLINE;
+      const color = cfg.color;
+      const isOffline = status === 'OFFLINE';
+
+      const iconHtml = `
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          ${!isOffline ? `<div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: ${color}; opacity: 0.38; animation: radar-ping 1.8s infinite;"></div>` : ''}
+          <div style="width: 10px; height: 10px; border-radius: 50%; background: ${color}; border: 2px solid ${isOffline ? '#64748b' : '#ffffff'}; box-shadow: ${isOffline ? 'none' : `0 0 10px ${color}`}; z-index: 5;"></div>
+        </div>
+      `;
+
+      const icon = L.divIcon({ html: iconHtml, className: 'custom-road-node-icon', iconSize: [22, 22], iconAnchor: [11, 11] });
+      const marker = L.marker([lat, lon], { icon: icon });
+
+      const popup = `
+        <div style="padding: 10px; font-family: 'Plus Jakarta Sans', sans-serif;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <span style="font-size: 13px;">📡</span>
+            <span style="font-weight: 800; font-size: 13px; color: #f8fafc;">${dev.name || dev.device_id}</span>
+          </div>
+          <div style="font-size: 11px; color: #38bdf8; font-weight: 600; margin-bottom: 8px;">
+            Trạm di động / Phụ tải realtime TP.HCM
+          </div>
+          <div style="background: rgba(255,255,255,0.06); padding: 8px; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 11px; color: #94a3b8;">Mực nước đo được:</span>
+              <span style="font-size: 14px; font-weight: 800; font-family: 'Space Grotesk'; color: ${color};">
+                ${water == null ? 'Chưa có dữ liệu' : `${water} cm`}
+              </span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+              <span style="font-size: 11px; color: #94a3b8;">Trạng thái:</span>
+              <span style="font-size: 11px; font-weight: 700; color: ${color};">${status}</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popup);
+      nodesLayerRef.current.addLayer(marker);
+    });
+  }, [roads, zones, devices, showSensors]);
 
   // 5. FitBounds / FlyTo khi click vào Tuyến đường hoặc Khu vực từ Sidebar
   useEffect(() => {

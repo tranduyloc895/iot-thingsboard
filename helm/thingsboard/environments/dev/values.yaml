@@ -54,6 +54,10 @@ externalDatabase:
 externalRedis:
   enabled: true
   existingSecret: thingsboard-redis
+telemetryRetention:
+  enabled: true
+  ttlSeconds: 86400
+  cleanupIntervalMs: 300000
 networkPolicy:
   enabled: true
   portalNamespace: flood-portal-dev

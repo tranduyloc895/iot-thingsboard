@@ -1,0 +1,61 @@
+{{- if and .Values.notifications.enabled .Values.notifications.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "infra-alerts.fullname" . }}-notifications
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "infra-alerts.selectorLabels" . | nindent 6 }}
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: In
+        values: [notification-prometheus, notification-alertmanager]
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - {protocol: TCP, port: 9090}
+        - {protocol: TCP, port: 9093}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.notifications.federation.namespace }}
+      ports:
+        - {protocol: TCP, port: 80}
+        - {protocol: TCP, port: 9090}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: notification-alertmanager
+              {{- include "infra-alerts.selectorLabels" . | nindent 14 }}
+      ports:
+        - {protocol: TCP, port: 9093}
+    {{- if .Values.notifications.ingressScrape.enabled }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.notifications.ingressScrape.namespace }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+              app.kubernetes.io/component: controller
+      ports:
+        - {protocol: TCP, port: {{ .Values.notifications.ingressScrape.port }}}
+    {{- end }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16]
+      ports:
+        - {protocol: TCP, port: 443}
+{{- end }}

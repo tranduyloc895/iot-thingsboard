@@ -1,0 +1,133 @@
+{{- if .Values.notifications.enabled }}
+{{- $root := . }}
+{{- range $component := list "prometheus" "alertmanager" }}
+{{- $config := index $root.Values.notifications $component }}
+{{- $name := printf "%s-%s" (include "infra-alerts.fullname" $root) $component }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "infra-alerts.labels" $root | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: notification-{{ $component }}
+      {{- include "infra-alerts.selectorLabels" $root | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/notifications: {{ include (print $root.Template.BasePath "/notifications-config.yaml") $root | sha256sum }}
+      labels:
+        app.kubernetes.io/component: notification-{{ $component }}
+        {{- include "infra-alerts.selectorLabels" $root | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        {{- toYaml $root.Values.nodeSelector.system | nindent 8 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ $component }}
+          image: {{ $config.image | quote }}
+          args:
+            - --config.file=/etc/config/{{ $component }}.yml
+            - --log.format=json
+            {{- if eq $component "prometheus" }}
+            - --storage.tsdb.path=/data
+            - --storage.tsdb.retention.time=6h
+            - --web.listen-address=:9090
+            {{- else }}
+            - --storage.path=/data
+            - --cluster.listen-address=
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ if eq $component "prometheus" }}9090{{ else }}9093{{ end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            {{- toYaml $config.resources | nindent 12 }}
+          startupProbe:
+            httpGet: {path: /-/ready, port: http}
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: {path: /-/ready, port: http}
+          livenessProbe:
+            httpGet: {path: /-/healthy, port: http}
+          volumeMounts:
+            - {name: config, mountPath: /etc/config, readOnly: true}
+            - {name: data, mountPath: /data}
+            - {name: tmp, mountPath: /tmp}
+            {{- if eq $component "alertmanager" }}
+            - {name: discord, mountPath: /etc/discord, readOnly: true}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "infra-alerts.fullname" $root }}-notifications-config
+        - name: data
+          {{- if $config.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ $name }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: tmp
+          emptyDir: {sizeLimit: 64Mi}
+        {{- if eq $component "alertmanager" }}
+        - name: discord
+          secret:
+            secretName: {{ required "notifications.discordSecretName is required" $root.Values.notifications.discordSecretName }}
+            defaultMode: 0440
+            items:
+              - key: {{ $root.Values.notifications.discordSecretKey }}
+                path: webhook-url
+        {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/component: notification-{{ $component }}
+    {{- include "infra-alerts.selectorLabels" $root | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ if eq $component "prometheus" }}9090{{ else }}9093{{ end }}
+      targetPort: http
+{{- if $config.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $name }}
+  annotations:
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- if $config.persistence.storageClass }}
+  storageClassName: {{ $config.persistence.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $config.persistence.size }}
+{{- end }}
+{{- end }}
+{{- end }}

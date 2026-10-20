@@ -39,6 +39,12 @@ externalRedis:
   enabled: false
   existingSecret: ""
 
+# Explicit opt-in for native SQL history cleanup; auto purge data older than 1 day (86400s)
+telemetryRetention:
+  enabled: false
+  ttlSeconds: 86400
+  cleanupIntervalMs: 300000
+
 networkPolicy:
   enabled: false
   portalNamespace: flood-portal
@@ -431,6 +437,14 @@ redis:
     replicaCount: 0
     persistence:
       enabled: false
+
+# Parent-chart HPA for the vendored Kafka chart. Never automatically scale down.
+# Existing Kafka partitions are NOT automatically moved to added brokers.
+kafkaAutoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
 
 kafka:
   enabled: true
