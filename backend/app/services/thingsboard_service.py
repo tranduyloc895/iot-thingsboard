@@ -2571,6 +2571,7 @@ class ThingsBoardService:
             if self._snapshot is not None and time.monotonic() < self._expires:
                 return self._snapshot
             by_station = {}
+            extra_readings = {}
             error = None
             try:
                 devices = []
@@ -2609,11 +2610,16 @@ class ThingsBoardService:
                     if not isinstance(item, tuple):
                         continue
                     idx, reading = item
-                    if idx not in by_station or reading["ts"] > by_station[idx]["ts"]:
-                        by_station[idx] = reading
+                    if idx is not None:
+                        if idx not in by_station or reading["ts"] > by_station[idx]["ts"]:
+                            by_station[idx] = reading
+                    else:
+                        dev_name = reading["name"]
+                        if dev_name not in extra_readings or reading["ts"] > extra_readings[dev_name]["ts"]:
+                            extra_readings[dev_name] = reading
                 if failures:
                     error = f"Không đọc được telemetry của {failures}/{len(devices)} thiết bị ThingsBoard."
-                elif not by_station:
+                elif not by_station and not extra_readings:
                     error = "ThingsBoard chưa có telemetry mực nước khớp với các trạm. Kiểm tra simulator."
             except ValueError as exc:
                 error = str(exc)
@@ -2632,11 +2638,10 @@ class ThingsBoardService:
                           else "ALERT" if water >= 20 else "SAFE") if online else "OFFLINE"
                 last_seen = (datetime.fromtimestamp(reading["ts"] / 1000, tz=VN_TZ)
                              .strftime("%Y-%m-%d %H:%M:%S")) if reading else "Chưa có dữ liệu"
-                def measurement(key):
-                    if not online:
-                        return None
+                def measurement(key, r_data=None):
+                    data_src = r_data if r_data is not None else (reading["data"] if reading else {})
                     try:
-                        value = float(self._value(reading["data"], key))
+                        value = float(self._value(data_src, key))
                         return value if math.isfinite(value) else None
                     except (TypeError, ValueError):
                         return None
@@ -2644,8 +2649,8 @@ class ThingsBoardService:
                     device_id=reading["entity_id"] if reading else station["device_id"],
                     name=reading["name"] if reading else station["device_name"],
                     latitude=station["lat"], longitude=station["lon"],
-                    water_level_cm=water, rainfall_mm=measurement("rainfall_mm"),
-                    temperature_c=measurement("temperature_c"), status=status,
+                    water_level_cm=water, rainfall_mm=measurement("rainfall_mm") if online else None,
+                    temperature_c=measurement("temperature_c") if online else None, status=status,
                     updated_at=last_seen,
                     error=None if online else (error or ("Không nhận telemetry trong 60 giây." if reading else "Trạm chưa gửi telemetry.")),
                     road_id=station["parent_id"] if station["parent_type"] == "ROAD" else None,
@@ -2653,10 +2658,60 @@ class ThingsBoardService:
                     station_node=station["station_node"], segment_idx=station["segment_idx"],
                     parent_id=station["parent_id"], parent_name=station["parent_name"],
                     parent_type=station["parent_type"]))
+
+            # Thêm các trạm quan trắc mở rộng / surge demo (ví dụ DEMO-SURGE-001..150)
+            for name, reading in extra_readings.items():
+                online = 0 <= now_ms - reading["ts"] <= 60000
+                if not online:
+                    continue
+                water = reading["water"]
+                lat_val = self._value(reading["data"], "latitude")
+                lon_val = self._value(reading["data"], "longitude")
+                if lat_val is None or lon_val is None:
+                    continue
+                try:
+                    lat = float(lat_val)
+                    lon = float(lon_val)
+                except (ValueError, TypeError):
+                    continue
+                status = ("CRITICAL" if water >= 50 else "WARNING" if water >= 35
+                          else "ALERT" if water >= 20 else "SAFE")
+                last_seen = (datetime.fromtimestamp(reading["ts"] / 1000, tz=VN_TZ)
+                             .strftime("%Y-%m-%d %H:%M:%S"))
+                rain = None
+                temp = None
+                try:
+                    rain = float(self._value(reading["data"], "rainfall_mm"))
+                except (TypeError, ValueError):
+                    pass
+                try:
+                    temp = float(self._value(reading["data"], "temperature_c"))
+                except (TypeError, ValueError):
+                    pass
+                results.append(DeviceTelemetry(
+                    device_id=reading["entity_id"],
+                    name=name,
+                    latitude=lat,
+                    longitude=lon,
+                    water_level_cm=water,
+                    rainfall_mm=rain,
+                    temperature_c=temp,
+                    status=status,
+                    updated_at=last_seen,
+                    error=None,
+                    road_id=None,
+                    road_name=None,
+                    station_node=name,
+                    segment_idx=None,
+                    parent_id=None,
+                    parent_name=None,
+                    parent_type="SURGE"
+                ))
+
             if not error and not any(d.status != "OFFLINE" for d in results):
                 error = "Tất cả trạm đã mất telemetry quá 60 giây. Kiểm tra simulator và kết nối MQTT."
             self._snapshot = (results, error)
-            self._expires = time.monotonic() + 5
+            self._expires = time.monotonic() + 1.0
             return self._snapshot
 
     async def get_live_devices(self) -> List[DeviceTelemetry]:

@@ -2,6 +2,7 @@ import time
 import json
 import random
 import os
+import math
 import threading
 import secrets
 from pathlib import Path
@@ -1034,18 +1035,25 @@ def run_simulation(token):
         print(f"[{DEVICE_NAME}] Đã kích hoạt trạm quan trắc #{assigned_station['node_num']:02d}: "
               f"{assigned_station['station_node']} ({assigned_station['parent_type']}: {assigned_station['parent_name']}, {assigned_station['district']})")
 
+        sim_step = 0
+        interval_min = float(os.getenv("SIM_INTERVAL_MIN", "1.0"))
+        interval_max = float(os.getenv("SIM_INTERVAL_MAX", "2.0"))
+
         while True:
             if not connected.wait(30):
                 client.disconnect()
                 client.loop_stop()
                 raise RuntimeError("Mất kết nối MQTT quá 30 giây")
+            sim_step += 1
             # Cảm biến cố định tại trạm, có sai số vi mô GPS (+- 1~2 mét)
             curr_lat = station_lat + random.uniform(-0.00001, 0.00001)
             curr_lon = station_lon + random.uniform(-0.00001, 0.00001)
 
-            # Mực nước dao động nhẹ quanh mức ngập chuẩn của trạm
-            fluctuation = (random.random() - 0.5) * 4.0
-            water_level = round(max(5.0, assigned_station["base_water"] + fluctuation), 1)
+            # Dao động ngẫu nhiên vượt các ngưỡng cảnh báo (SAFE <20cm, ALERT 20-35cm, WARNING 35-50cm, CRITICAL >=50cm)
+            # Giúp các điểm trạm đổi màu linh hoạt trong 1-2 giây để dễ thể hiện realtime trực quan
+            wave = 16.0 * math.sin(sim_step * 0.8 + station_idx)
+            jitter = (random.random() - 0.5) * 8.0
+            water_level = round(max(5.0, assigned_station["base_water"] + wave + jitter), 1)
 
             rainfall = round(random.uniform(15.0, 42.0), 1)
             temperature = round(random.uniform(28.0, 31.8), 1)
@@ -1089,7 +1097,7 @@ def run_simulation(token):
             print(f"[{DEVICE_NAME}] Trạm #{assigned_station['node_num']:02d} [{assigned_station['station_node']}] "
                   f"-> Nước: {water_level}cm [{status}] | Mưa: {rainfall}mm | ({payload['latitude']}, {payload['longitude']})")
 
-            time.sleep(random.uniform(3, 5))
+            time.sleep(random.uniform(interval_min, interval_max))
     finally:
         client.disconnect()
         client.loop_stop()
