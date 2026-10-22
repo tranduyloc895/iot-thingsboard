@@ -46,10 +46,10 @@ const SEVERITY_CONFIG = {
   }
 };
 
-// Giới hạn không gian địa lý khóa chặt trong phạm vi TP.HCM
+// Giới hạn không gian địa lý khóa chặt trong phạm vi TP.HCM (loại bỏ hoàn toàn Đồng Nai, Long Thành, Bình Dương)
 const HCMC_BOUNDS = [
-  [10.3500, 106.3500], // Tây Nam TP.HCM (Cần Giờ / Long An)
-  [11.1500, 107.0500]  // Đông Bắc TP.HCM (Củ Chi / Bình Dương / Đồng Nai)
+  [10.5500, 106.4800], // Tây Nam TP.HCM (Bình Chánh / Nhà Bè)
+  [10.9800, 106.8400]  // Đông Bắc TP.HCM (TP. Thủ Đức - ranh giới Sông Đồng Nai, chặn qua Long Thành)
 ];
 
 export default function FloodMap({ selectedLocation, roads = [], zones = [], devices = [] }) {
@@ -69,10 +69,12 @@ export default function FloodMap({ selectedLocation, roads = [], zones = [], dev
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [10.7850, 106.6950],
-      zoom: 12.5,
-      minZoom: 11,
+      center: [10.7760, 106.6650], // Căn tâm khu vực đô thị nội thành TP.HCM (bù trừ cho sidebar 410px bên trái)
+      zoom: 13,
+      minZoom: 12,
       maxZoom: 18,
+      zoomSnap: 0.25,
+      zoomDelta: 0.5,
       maxBounds: HCMC_BOUNDS,
       maxBoundsViscosity: 1.0, // Khóa cứng bản đồ, không thể kéo ra khỏi TP.HCM
       zoomControl: false,
@@ -438,10 +440,16 @@ export default function FloodMap({ selectedLocation, roads = [], zones = [], dev
     if (!mapRef.current || !selectedLocation) return;
 
     try {
+      const paddingOptions = {
+        paddingTopLeft: [typeof window !== 'undefined' && window.innerWidth > 768 ? 430 : 40, 50],
+        paddingBottomRight: [50, 50],
+        maxZoom: 15,
+        duration: 1.2
+      };
       if (selectedLocation.coordinates && selectedLocation.coordinates.length > 0) {
-        mapRef.current.fitBounds(selectedLocation.coordinates, { padding: [50, 50], maxZoom: 15, duration: 1.2 });
+        mapRef.current.fitBounds(selectedLocation.coordinates, paddingOptions);
       } else if (selectedLocation.polygon && selectedLocation.polygon.length > 0) {
-        mapRef.current.fitBounds(selectedLocation.polygon, { padding: [50, 50], maxZoom: 15, duration: 1.2 });
+        mapRef.current.fitBounds(selectedLocation.polygon, paddingOptions);
       } else {
         const lat = selectedLocation.latitude ?? selectedLocation.lat ?? selectedLocation.center?.[0];
         const lon = selectedLocation.longitude ?? selectedLocation.lon ?? selectedLocation.center?.[1];
@@ -456,7 +464,7 @@ export default function FloodMap({ selectedLocation, roads = [], zones = [], dev
 
   const handleZoomIn = () => mapRef.current?.zoomIn();
   const handleZoomOut = () => mapRef.current?.zoomOut();
-  const handleRecenter = () => mapRef.current?.flyTo([10.7850, 106.6950], 12.5);
+  const handleRecenter = () => mapRef.current?.flyTo([10.7760, 106.6650], 13);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
