@@ -143,6 +143,8 @@ ingress:
   - thingsboard.web-ui.com
   tls: false
 jsexecutor:
+  # Lab profile: 6 partitions for 2-6 JS executor pods.
+  kafkaTopicProperties: "retention.ms:604800000;segment.bytes:26214400;retention.bytes:104857600;partitions:6;min.insync.replicas:1"
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:

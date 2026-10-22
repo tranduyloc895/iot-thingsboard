@@ -57,6 +57,12 @@ spec:
           env:
           - name: REMOTE_JS_EVAL_REQUEST_TOPIC
             value: "js_eval.requests"
+          - name: TB_QUEUE_KAFKA_JE_TOPIC_PROPERTIES
+            value: {{ .Values.jsexecutor.kafkaTopicProperties | quote }}
+          - name: KAFKA_CLIENT_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           - name: TB_KAFKA_SERVERS
             value: "{{ .Release.Name }}-kafka:{{ .Values.kafka.service.ports.client }}"
           - name: TB_QUEUE_KAFKA_REPLICATION_FACTOR
