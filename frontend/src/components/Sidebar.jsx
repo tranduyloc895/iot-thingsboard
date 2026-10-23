@@ -123,7 +123,7 @@ export default function Sidebar({
         </div>
         <div>
           <h1 style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.3px', color: '#ffffff' }}>
-            HCM Flood Warning
+            HCM Flood Warning (CI/CD Test)
           </h1>
           <p style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '0.8px', color: '#94a3b8', textTransform: 'uppercase' }}>
             Smart City Hydrology Network
